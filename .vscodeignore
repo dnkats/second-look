@@ -1,0 +1,10 @@
+**
+!package.json
+!README.md
+!LICENSE
+!CHANGELOG.md
+!dist/extension.js
+!media/**
+!docs/*.png
+!skill/**
+skill/review-comments/scripts/node-path

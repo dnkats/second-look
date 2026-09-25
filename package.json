@@ -27,10 +27,17 @@
   "extensionKind": [
     "workspace"
   ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "scripts": {
     "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc -p . --noEmit",
-    "test": "npm run build && node --test test/unit/*.test.mjs"
+    "test": "npm run build && node --test test/unit/*.test.mjs",
+    "test:vscode": "npm run build && node test/vscode/run.mjs",
+    "package": "npm run build && vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",
@@ -40,5 +47,525 @@
     "diff": "^9.0.0",
     "esbuild": "^0.28.2",
     "typescript": "~5.9.3"
+  },
+  "contributes": {
+    "views": {
+      "gitReview": [
+        {
+          "id": "gitReview.view",
+          "name": "Review",
+          "icon": "media/review.svg",
+          "contextualTitle": "Git Review"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "gitReview.view",
+        "contents": "Open a folder that is a git repository to review the changes in it.",
+        "when": "gitReview.state == noRepo"
+      },
+      {
+        "view": "gitReview.view",
+        "contents": "Looking for changes…",
+        "when": "gitReview.state == loading"
+      },
+      {
+        "view": "gitReview.view",
+        "contents": "Nothing to review. Changes that you or an agent make in this repository show up here.\n[Review From…](command:gitReview.reviewFrom)",
+        "when": "gitReview.state == clean"
+      },
+      {
+        "view": "gitReview.view",
+        "contents": "Check out a branch to review the changes on it.",
+        "when": "gitReview.state == detached"
+      },
+      {
+        "view": "gitReview.view",
+        "contents": "A terminal review (git review) is open in this checkout.\n[Take It Over](command:gitReview.takeOverTerminal)",
+        "when": "gitReview.state == terminal"
+      },
+      {
+        "view": "gitReview.view",
+        "contents": "Something went wrong while reading the repository.\n[Refresh](command:gitReview.refresh)",
+        "when": "gitReview.state == error"
+      }
+    ],
+    "commands": [
+      {
+        "command": "gitReview.refresh",
+        "title": "Refresh",
+        "category": "Git Review",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gitReview.openAll",
+        "title": "Open All Changes to Review",
+        "category": "Git Review",
+        "icon": "$(diff-multiple)"
+      },
+      {
+        "command": "gitReview.finish",
+        "title": "Finish Review",
+        "category": "Git Review",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "gitReview.undo",
+        "title": "Undo Last Accept or Reject",
+        "category": "Git Review",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "gitReview.reviewFrom",
+        "title": "Review From…",
+        "category": "Git Review",
+        "icon": "$(history)"
+      },
+      {
+        "command": "gitReview.acceptAll",
+        "title": "Accept All Changes",
+        "category": "Git Review",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "gitReview.rejectAll",
+        "title": "Reject All Changes",
+        "category": "Git Review",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "gitReview.accept",
+        "title": "Accept",
+        "category": "Git Review",
+        "icon": "$(check)"
+      },
+      {
+        "command": "gitReview.reject",
+        "title": "Reject",
+        "category": "Git Review",
+        "icon": "$(close)"
+      },
+      {
+        "command": "gitReview.unaccept",
+        "title": "Review Again",
+        "category": "Git Review",
+        "icon": "$(reply)"
+      },
+      {
+        "command": "gitReview.openChange",
+        "title": "Open Change",
+        "category": "Git Review",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "gitReview.openAccepted",
+        "title": "Open Accepted Change",
+        "category": "Git Review",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "gitReview.acceptAtCursor",
+        "title": "Accept Change at Cursor",
+        "category": "Git Review",
+        "icon": "$(check)"
+      },
+      {
+        "command": "gitReview.rejectAtCursor",
+        "title": "Reject Change at Cursor",
+        "category": "Git Review",
+        "icon": "$(close)"
+      },
+      {
+        "command": "gitReview.nextChange",
+        "title": "Next Change to Review",
+        "category": "Git Review",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "gitReview.previousChange",
+        "title": "Previous Change to Review",
+        "category": "Git Review",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "gitReview.reviewThisFile",
+        "title": "Review Changes in This File",
+        "category": "Git Review",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "gitReview.takeOverTerminal",
+        "title": "Take Over Terminal Review",
+        "category": "Git Review",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "gitReview.installSkill",
+        "title": "Install Agent Skill…",
+        "category": "Git Review",
+        "icon": "$(hubot)"
+      },
+      {
+        "command": "gitReview.copyComments",
+        "title": "Copy Open Comments as Prompt",
+        "category": "Git Review",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "gitReview.comment.create",
+        "title": "Add Comment",
+        "category": "Git Review"
+      },
+      {
+        "command": "gitReview.comment.reply",
+        "title": "Reply",
+        "category": "Git Review"
+      },
+      {
+        "command": "gitReview.comment.resolve",
+        "title": "Resolve",
+        "category": "Git Review",
+        "icon": "$(check)"
+      },
+      {
+        "command": "gitReview.comment.reopen",
+        "title": "Reopen",
+        "category": "Git Review",
+        "icon": "$(issue-reopened)"
+      },
+      {
+        "command": "gitReview.comment.delete",
+        "title": "Delete Thread",
+        "category": "Git Review",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "gitReview.comment.edit",
+        "title": "Edit",
+        "category": "Git Review",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "gitReview.comment.save",
+        "title": "Save",
+        "category": "Git Review"
+      },
+      {
+        "command": "gitReview.comment.cancel",
+        "title": "Cancel",
+        "category": "Git Review"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "gitReview.accept",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.reject",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.unaccept",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.openChange",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.openAccepted",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.create",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.reply",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.resolve",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.reopen",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.delete",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.edit",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.save",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.comment.cancel",
+          "when": "false"
+        },
+        {
+          "command": "gitReview.acceptAtCursor",
+          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff"
+        },
+        {
+          "command": "gitReview.rejectAtCursor",
+          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff"
+        },
+        {
+          "command": "gitReview.takeOverTerminal",
+          "when": "gitReview.state == terminal || gitReview.state == multi"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "gitReview.openAll",
+          "when": "view == gitReview.view && gitReview.hasPending",
+          "group": "navigation@1"
+        },
+        {
+          "command": "gitReview.undo",
+          "when": "view == gitReview.view && gitReview.canUndo",
+          "group": "navigation@2"
+        },
+        {
+          "command": "gitReview.finish",
+          "when": "view == gitReview.view && gitReview.hasReview",
+          "group": "navigation@3"
+        },
+        {
+          "command": "gitReview.refresh",
+          "when": "view == gitReview.view",
+          "group": "navigation@4"
+        },
+        {
+          "command": "gitReview.reviewFrom",
+          "when": "view == gitReview.view",
+          "group": "1_review@1"
+        },
+        {
+          "command": "gitReview.acceptAll",
+          "when": "view == gitReview.view && gitReview.hasPending",
+          "group": "1_review@2"
+        },
+        {
+          "command": "gitReview.rejectAll",
+          "when": "view == gitReview.view && gitReview.hasPending",
+          "group": "1_review@3"
+        },
+        {
+          "command": "gitReview.copyComments",
+          "when": "view == gitReview.view",
+          "group": "2_agent@1"
+        },
+        {
+          "command": "gitReview.installSkill",
+          "when": "view == gitReview.view",
+          "group": "2_agent@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "gitReview.accept",
+          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitReview.reject",
+          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "group": "inline@2"
+        },
+        {
+          "command": "gitReview.unaccept",
+          "when": "view == gitReview.view && viewItem =~ /^accepted(File|Hunk)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitReview.openAll",
+          "when": "view == gitReview.view && viewItem == pendingGroup",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitReview.accept",
+          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "group": "1_review@1"
+        },
+        {
+          "command": "gitReview.reject",
+          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "group": "1_review@2"
+        },
+        {
+          "command": "gitReview.unaccept",
+          "when": "view == gitReview.view && viewItem =~ /^accepted(File|Hunk)$/",
+          "group": "1_review@1"
+        },
+        {
+          "command": "gitReview.openChange",
+          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "group": "2_open@1"
+        },
+        {
+          "command": "gitReview.openAccepted",
+          "when": "view == gitReview.view && viewItem =~ /^accepted(File|Hunk)$/",
+          "group": "2_open@1"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "gitReview.acceptAtCursor",
+          "when": "gitReview.activeIsReviewDiff",
+          "group": "navigation@1"
+        },
+        {
+          "command": "gitReview.rejectAtCursor",
+          "when": "gitReview.activeIsReviewDiff",
+          "group": "navigation@2"
+        },
+        {
+          "command": "gitReview.reviewThisFile",
+          "when": "gitReview.activeFileHasPending && !isInDiffEditor",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "gitReview.acceptAtCursor",
+          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff",
+          "group": "1_gitReview@1"
+        },
+        {
+          "command": "gitReview.rejectAtCursor",
+          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff",
+          "group": "1_gitReview@2"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "gitReview.comment.create",
+          "when": "commentController == gitReview && commentThreadIsEmpty",
+          "group": "inline"
+        },
+        {
+          "command": "gitReview.comment.reply",
+          "when": "commentController == gitReview && !commentThreadIsEmpty",
+          "group": "inline"
+        }
+      ],
+      "comments/commentThread/title": [
+        {
+          "command": "gitReview.comment.resolve",
+          "when": "commentController == gitReview && commentThread == open",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitReview.comment.reopen",
+          "when": "commentController == gitReview && commentThread == resolved",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitReview.comment.delete",
+          "when": "commentController == gitReview && !commentThreadIsEmpty",
+          "group": "inline@2"
+        }
+      ],
+      "comments/comment/title": [
+        {
+          "command": "gitReview.comment.edit",
+          "when": "commentController == gitReview && comment == user",
+          "group": "inline"
+        }
+      ],
+      "comments/comment/context": [
+        {
+          "command": "gitReview.comment.cancel",
+          "when": "commentController == gitReview",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitReview.comment.save",
+          "when": "commentController == gitReview",
+          "group": "inline@2"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "gitReview.acceptAtCursor",
+        "key": "alt+y",
+        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+      },
+      {
+        "command": "gitReview.rejectAtCursor",
+        "key": "alt+n",
+        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+      },
+      {
+        "command": "gitReview.nextChange",
+        "key": "alt+j",
+        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+      },
+      {
+        "command": "gitReview.previousChange",
+        "key": "alt+k",
+        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+      }
+    ],
+    "configuration": {
+      "title": "Git Review",
+      "properties": {
+        "gitReview.finish.commitEdits": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "always",
+            "never"
+          ],
+          "default": "ask",
+          "enumDescriptions": [
+            "Ask when finishing a review.",
+            "Commit everything uncommitted as one \"Review edits\" commit.",
+            "Leave uncommitted changes as they are."
+          ],
+          "description": "What Finish Review does with changes that are not committed yet."
+        },
+        "gitReview.codeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Accept and Reject above each change to review in the editor. In diff editors they appear only when diffEditor.codeLens is on."
+        },
+        "gitReview.statusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the number of changes to review in the status bar."
+        },
+        "gitReview.highlightChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight the lines still to review in the editor."
+        }
+      }
+    },
+    "chatSkills": [
+      {
+        "path": "./skill/review-comments/SKILL.md"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gitReview",
+          "title": "Review",
+          "icon": "media/review.svg"
+        }
+      ]
+    }
   }
 }
