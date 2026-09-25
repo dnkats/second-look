@@ -1,0 +1,12 @@
+#!/bin/sh
+# Runs the review-comments tool that ships with this skill. It needs Node.js:
+# the node on PATH, or the one VS Code recorded when it installed the skill.
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if command -v node >/dev/null 2>&1; then
+  exec node "$dir/review-comments.js" "$@"
+fi
+if [ -f "$dir/node-path" ] && [ -x "$(cat "$dir/node-path")" ]; then
+  exec "$(cat "$dir/node-path")" "$dir/review-comments.js" "$@"
+fi
+echo "review-comments needs Node.js: install it, or run 'Git Review: Install Agent Skill' in VS Code again." >&2
+exit 1

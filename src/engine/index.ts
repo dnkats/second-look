@@ -4,3 +4,4 @@ export * from './hunks';
 export * from './io';
 export * from './repo';
 export * from './review';
+export * from '../comments/store';
