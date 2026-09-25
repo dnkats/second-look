@@ -1,0 +1,44 @@
+{
+  "name": "git-review-vscode",
+  "displayName": "Git Review",
+  "description": "Review what your coding agent changed, change by change: accept, reject, edit, leave comments for the agent, and finish when you're done.",
+  "version": "0.1.0",
+  "publisher": "dnkats",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dnkats/git-review-vscode"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "review",
+    "code review",
+    "agent",
+    "claude",
+    "diff",
+    "comments"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "npm run build && node --test test/unit/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/vscode": "1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "diff": "^9.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "~5.9.3"
+  }
+}

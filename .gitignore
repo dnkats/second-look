@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.vsix
+skill/review-comments/scripts/review-comments.js
+skill/review-comments/scripts/node-path
+.vscode-test/
