@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 
 const SKILL = 'review-comments';
-const MARKER = '.installed-by-git-review';
+const MARKER = '.installed-by-second-look';
 
 interface Target {
   label: string;
@@ -63,7 +63,7 @@ export async function installSkill(context: vscode.ExtensionContext): Promise<vo
   for (const { t } of picks) {
     const dest = path.join(t.dir, SKILL);
     if ((await exists(dest)) && !(await exists(path.join(dest, MARKER)))) {
-      const ok = await vscode.window.showWarningMessage(`${dest} exists and was not installed by Git Review. Replace it?`, { modal: true }, 'Replace');
+      const ok = await vscode.window.showWarningMessage(`${dest} exists and was not installed by Second Look. Replace it?`, { modal: true }, 'Replace');
       if (ok !== 'Replace') {
         continue;
       }

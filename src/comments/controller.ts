@@ -65,7 +65,7 @@ export class CommentsUI implements vscode.Disposable {
     private readonly manager: Manager,
     private readonly onFirstComment: () => void,
   ) {
-    this.controller = vscode.comments.createCommentController('gitReview', 'Review Comments');
+    this.controller = vscode.comments.createCommentController('secondLook', 'Review Comments');
     this.controller.options = {
       prompt: 'Comment for the agent',
       placeHolder: 'Your agent reads this when you ask it to check your comments',
@@ -88,19 +88,19 @@ export class CommentsUI implements vscode.Disposable {
           try {
             await fn(...args);
           } catch (e) {
-            void vscode.window.showErrorMessage(`Git Review: ${(e as Error).message}`);
+            void vscode.window.showErrorMessage(`Second Look: ${(e as Error).message}`);
           }
         }),
       );
-    cmd('gitReview.comment.create', (r: vscode.CommentReply) => this.create(r));
-    cmd('gitReview.comment.reply', (r: vscode.CommentReply) => this.reply(r));
-    cmd('gitReview.comment.resolve', (t: vscode.CommentThread) => this.setStatus(t, 'resolved'));
-    cmd('gitReview.comment.reopen', (t: vscode.CommentThread) => this.setStatus(t, 'open'));
-    cmd('gitReview.comment.delete', (t: vscode.CommentThread) => this.remove(t));
-    cmd('gitReview.comment.edit', (c: ReviewComment) => this.edit(c));
-    cmd('gitReview.comment.save', (c: ReviewComment) => this.save(c));
-    cmd('gitReview.comment.cancel', (c: ReviewComment) => this.cancel(c));
-    cmd('gitReview.copyComments', (a?: string) => this.copyAsPrompt(a));
+    cmd('secondLook.comment.create', (r: vscode.CommentReply) => this.create(r));
+    cmd('secondLook.comment.reply', (r: vscode.CommentReply) => this.reply(r));
+    cmd('secondLook.comment.resolve', (t: vscode.CommentThread) => this.setStatus(t, 'resolved'));
+    cmd('secondLook.comment.reopen', (t: vscode.CommentThread) => this.setStatus(t, 'open'));
+    cmd('secondLook.comment.delete', (t: vscode.CommentThread) => this.remove(t));
+    cmd('secondLook.comment.edit', (c: ReviewComment) => this.edit(c));
+    cmd('secondLook.comment.save', (c: ReviewComment) => this.save(c));
+    cmd('secondLook.comment.cancel', (c: ReviewComment) => this.cancel(c));
+    cmd('secondLook.copyComments', (a?: string) => this.copyAsPrompt(a));
   }
 
   /** Loads every repository's threads and follows its store file. */

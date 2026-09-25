@@ -15,7 +15,7 @@ export class ReviewLenses implements vscode.CodeLensProvider {
   }
 
   async provideCodeLenses(doc: vscode.TextDocument): Promise<vscode.CodeLens[]> {
-    if (!vscode.workspace.getConfiguration('gitReview').get<boolean>('codeLens', true)) {
+    if (!vscode.workspace.getConfiguration('secondLook').get<boolean>('codeLens', true)) {
       return [];
     }
     const m = this.manager.modelFor(doc.uri);
@@ -32,8 +32,8 @@ export class ReviewLenses implements vscode.CodeLensProvider {
       const line = Math.min(h.newStart, Math.max(doc.lineCount - 1, 0));
       const range = new vscode.Range(line, 0, line, 0);
       const target: Target = { root: m.repo.root, path: rel, group: 'pending', key: hunkKey(h), line: h.newStart };
-      lenses.push(new vscode.CodeLens(range, { title: '$(check) Accept', tooltip: 'Accept this change: mark it reviewed', command: 'gitReview.accept', arguments: [target] }));
-      lenses.push(new vscode.CodeLens(range, { title: '$(close) Reject', tooltip: 'Reject this change: put back the reviewed text', command: 'gitReview.reject', arguments: [target] }));
+      lenses.push(new vscode.CodeLens(range, { title: '$(check) Accept', tooltip: 'Accept this change: mark it reviewed', command: 'secondLook.accept', arguments: [target] }));
+      lenses.push(new vscode.CodeLens(range, { title: '$(close) Reject', tooltip: 'Reject this change: put back the reviewed text', command: 'secondLook.reject', arguments: [target] }));
     }
     return lenses;
   }

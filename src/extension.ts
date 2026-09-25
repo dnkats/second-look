@@ -25,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   context.subscriptions.push(vscode.window.registerFileDecorationProvider(new ItemDecorations()));
 
   const tree = new ReviewTree(manager);
-  const view = vscode.window.createTreeView('gitReview.view', { treeDataProvider: tree, showCollapseAll: true });
+  const view = vscode.window.createTreeView('secondLook.view', { treeDataProvider: tree, showCollapseAll: true });
   context.subscriptions.push(view);
 
   const lenses = new ReviewLenses(manager);
@@ -33,16 +33,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   const highlights = new Highlights(manager);
   context.subscriptions.push(highlights);
 
-  const status = vscode.window.createStatusBarItem('gitReview.status', vscode.StatusBarAlignment.Left, 50);
-  status.name = 'Git Review';
-  status.command = 'gitReview.view.focus';
+  const status = vscode.window.createStatusBarItem('secondLook.status', vscode.StatusBarAlignment.Left, 50);
+  status.name = 'Second Look';
+  status.command = 'secondLook.view.focus';
   context.subscriptions.push(status);
 
   new Commands(manager).register(context);
   const comments = new CommentsUI(manager, () => void offerSkill(context));
   comments.register(context);
   context.subscriptions.push(comments);
-  context.subscriptions.push(vscode.commands.registerCommand('gitReview.installSkill', () => installSkill(context)));
+  context.subscriptions.push(vscode.commands.registerCommand('secondLook.installSkill', () => installSkill(context)));
 
   const update = () => {
     tree.refresh();
@@ -53,7 +53,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
     view.message = models.length === 1 && (models[0].state === 'changes' || models[0].state === 'reviewed') ? header(models[0]) : undefined;
     const hunks = models.reduce((n, m) => n + m.pendingHunkCount, 0);
     view.badge = hunks > 0 ? { value: hunks, tooltip: `${hunks} change${hunks === 1 ? '' : 's'} to review` } : undefined;
-    const showStatus = vscode.workspace.getConfiguration('gitReview').get<boolean>('statusBar', true);
+    const showStatus = vscode.workspace.getConfiguration('secondLook').get<boolean>('statusBar', true);
     if (hunks > 0 && showStatus) {
       const files = models.reduce((n, m) => n + m.pending.length, 0);
       status.text = `$(checklist) ${hunks}`;
@@ -75,7 +75,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   );
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('gitReview')) {
+      if (e.affectsConfiguration('secondLook')) {
         update();
       }
     }),
@@ -84,7 +84,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   void refreshSkills(context);
   // a .vsix does not keep the executable bit; VS Code's chat runs the skill from here
   void fs.chmod(path.join(context.extensionPath, 'skill', 'review-comments', 'scripts', 'review-comments'), 0o755).catch(() => undefined);
-  await vscode.commands.executeCommand('setContext', 'gitReview.state', 'loading');
+  await vscode.commands.executeCommand('setContext', 'secondLook.state', 'loading');
   await manager.discover();
   update();
   // for the integration tests
@@ -110,17 +110,17 @@ async function setContexts(manager: Manager): Promise<void> {
     state = models[0].state;
   }
   const set = (k: string, v: unknown) => vscode.commands.executeCommand('setContext', k, v);
-  await set('gitReview.state', state);
-  await set('gitReview.hasPending', models.some((m) => m.pending.length > 0));
-  await set('gitReview.hasReview', models.some((m) => m.pending.length > 0 || m.accepted.length > 0));
-  await set('gitReview.canUndo', models.some((m) => m.undoLabel !== undefined));
+  await set('secondLook.state', state);
+  await set('secondLook.hasPending', models.some((m) => m.pending.length > 0));
+  await set('secondLook.hasReview', models.some((m) => m.pending.length > 0 || m.accepted.length > 0));
+  await set('secondLook.canUndo', models.some((m) => m.undoLabel !== undefined));
   const ed = vscode.window.activeTextEditor;
   const m = ed ? manager.modelFor(ed.document.uri) : undefined;
   const rel = m && ed ? m.repo.rel(ed.document.uri.fsPath) : undefined;
-  await set('gitReview.activeFileHasPending', !!(m && rel && m.pendingFile(rel)));
+  await set('secondLook.activeFileHasPending', !!(m && rel && m.pendingFile(rel)));
   const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
   const reviewDiff = tab?.input instanceof vscode.TabInputTextDiff && tab.input.original.scheme === CONTENT_SCHEME;
-  await set('gitReview.activeIsReviewDiff', reviewDiff);
+  await set('secondLook.activeIsReviewDiff', reviewDiff);
 }
 
 async function offerSkill(context: vscode.ExtensionContext): Promise<void> {

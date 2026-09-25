@@ -124,12 +124,12 @@ export class Review {
     readonly io: WorktreeIO,
     private readonly hooks: ReviewHooks = {},
   ) {
-    this.dir = path.join(repo.gitDir, 'git-review');
+    this.dir = path.join(repo.gitDir, 'second-look');
     const key = encodeURIComponent(branch);
     this.stateFile = path.join(this.dir, `${key}.json`);
     this.indexFile = path.join(this.dir, `${key}.index`);
     this.undoFile = path.join(this.dir, `${key}.undo.json`);
-    this.checklistRef = `refs/review-checklist/${branch}`;
+    this.checklistRef = `refs/second-look/${branch}`;
     this.reviewedRef = `refs/reviewed/${branch}`;
     this.env = { GIT_INDEX_FILE: this.indexFile };
   }
@@ -202,7 +202,7 @@ export class Review {
   async autoBase(): Promise<BaseChoice> {
     const head = await this.repo.head();
     if (!head) {
-      return { base: await this.commitTree(EMPTY_TREE, [], 'Git Review: empty start'), kind: 'empty' };
+      return { base: await this.commitTree(EMPTY_TREE, [], 'Second Look: empty start'), kind: 'empty' };
     }
     const main = await this.followMain();
     const follows = main ? { upstreamRef: main.ref, upstream: main.now } : {};
@@ -215,7 +215,7 @@ export class Review {
         if (then && then !== main.now) {
           const carried = await this.carry(reviewed, then, main.now);
           if (carried) {
-            choice.base = await this.commitTree(carried.tree, [main.now], 'Git Review: last review carried onto main');
+            choice.base = await this.commitTree(carried.tree, [main.now], 'Second Look: last review carried onto main');
           }
         }
       }
@@ -273,7 +273,7 @@ export class Review {
       if (!accepted || !base) {
         return { carried: false, conflicts: [] };
       }
-      state.base = await this.commitTree(base.tree, [now], 'Git Review: review base carried onto main');
+      state.base = await this.commitTree(base.tree, [now], 'Second Look: review base carried onto main');
       state.upstream = now;
       await this.readTree(accepted.tree);
       await this.saveState(state);
@@ -357,7 +357,7 @@ export class Review {
     if (tree === this.protectedTree) {
       return;
     }
-    const commit = await this.commitTree(tree, [state.base], `Git Review checklist for ${this.branch}`);
+    const commit = await this.commitTree(tree, [state.base], `Second Look checklist for ${this.branch}`);
     await this.repo.run(['update-ref', this.checklistRef, commit]);
     this.protectedTree = tree;
   }
@@ -805,7 +805,7 @@ export class Review {
       if (head && (await this.repo.treeOf(head)) === tree) {
         reviewed = head;
       } else {
-        reviewed = await this.commitTree(tree, head ? [head] : [], `Reviewed state of ${this.branch}\n\nRecorded by Git Review; this commit is not on any branch.`);
+        reviewed = await this.commitTree(tree, head ? [head] : [], `Reviewed state of ${this.branch}\n\nRecorded by Second Look; this commit is not on any branch.`);
       }
       await this.repo.run(['update-ref', this.reviewedRef, reviewed]);
       await this.discardUnlocked();
@@ -865,7 +865,7 @@ export class Review {
       let base = await this.repo.resolve(baseRaw);
       if (!base) {
         // after a carry the tool records a tree
-        base = await this.commitTree(baseRaw, [upstream ?? head ?? ''].filter((x) => x), 'Git Review: base of a terminal review');
+        base = await this.commitTree(baseRaw, [upstream ?? head ?? ''].filter((x) => x), 'Second Look: base of a terminal review');
       }
       const main = await this.followMain();
       await this.discardUnlocked();

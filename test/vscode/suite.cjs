@@ -38,7 +38,7 @@ async function test(name, fn) {
 }
 
 exports.run = async function run() {
-  const ext = vscode.extensions.getExtension('dnkats.git-review-vscode');
+  const ext = vscode.extensions.getExtension('dnkats.second-look');
   const api = await ext.activate();
   const model = await until('the repository model', () => api.manager.models.find((m) => m.state === 'changes'));
   const file = (rel) => vscode.Uri.file(path.join(repo, rel));
@@ -70,19 +70,19 @@ exports.run = async function run() {
 
   await test('accepting a change moves it to Accepted and leaves git alone', async () => {
     const [h1] = model.pending[0].hunks;
-    await vscode.commands.executeCommand('gitReview.accept', { root: repo, path: 'a.txt', group: 'pending', key: hunkKey(h1), line: h1.newStart });
+    await vscode.commands.executeCommand('secondLook.accept', { root: repo, path: 'a.txt', group: 'pending', key: hunkKey(h1), line: h1.newStart });
     await until('one hunk left', () => model.pendingFile('a.txt')?.hunks.length === 1);
     assert.deepEqual(model.accepted.map((f) => f.path), ['a.txt']);
     assert.equal(execFileSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' }), '');
   });
 
   await test('the review diff shows the accepted text on the left', async () => {
-    await vscode.commands.executeCommand('gitReview.openChange', { root: repo, path: 'a.txt', group: 'pending' });
+    await vscode.commands.executeCommand('secondLook.openChange', { root: repo, path: 'a.txt', group: 'pending' });
     const tab = await until('a diff tab', () => {
       const t = vscode.window.tabGroups.activeTabGroup.activeTab;
       return t && t.input instanceof vscode.TabInputTextDiff ? t : undefined;
     });
-    assert.equal(tab.input.original.scheme, 'git-review');
+    assert.equal(tab.input.original.scheme, 'second-look');
     assert.equal(tab.input.modified.fsPath, file('a.txt').fsPath);
     const left = await vscode.workspace.openTextDocument(tab.input.original);
     assert.match(left.getText(), /^line 1\nline 2\nthree\n/);
@@ -94,17 +94,17 @@ exports.run = async function run() {
     await vscode.window.showTextDocument(ed.document, { viewColumn: ed.viewColumn, preserveFocus: false });
     const active = vscode.window.activeTextEditor;
     active.selection = new vscode.Selection(24, 0, 24, 0);
-    await vscode.commands.executeCommand('gitReview.rejectAtCursor');
+    await vscode.commands.executeCommand('secondLook.rejectAtCursor');
     await until('the change is gone', () => !model.pendingFile('a.txt'));
     assert.match(fs.readFileSync(file('a.txt').fsPath, 'utf8'), /line 25\n/);
-    await vscode.commands.executeCommand('gitReview.undo', repo);
+    await vscode.commands.executeCommand('secondLook.undo', repo);
     await until('the change is back', () => model.pendingFile('a.txt')?.hunks.length === 1);
     assert.match(fs.readFileSync(file('a.txt').fsPath, 'utf8'), /twenty-five/);
   });
 
   await test('a comment reaches the agent tool, and its reply shows in the thread', async () => {
     const thread = api.comments.controller.createCommentThread(file('a.txt'), new vscode.Range(9, 0, 9, 0), []);
-    await vscode.commands.executeCommand('gitReview.comment.create', { thread, text: 'why ten?' });
+    await vscode.commands.executeCommand('secondLook.comment.create', { thread, text: 'why ten?' });
     const out = execFileSync(cli, ['list'], { cwd: repo, encoding: 'utf8' });
     const id = /^(c\d+)  a\.txt:10$/m.exec(out)?.[1];
     assert.ok(id, out);
@@ -117,7 +117,7 @@ exports.run = async function run() {
 
   await test('rejections are told to the agent once', async () => {
     const t = model.pendingFile('a.txt');
-    await vscode.commands.executeCommand('gitReview.reject', { root: repo, path: 'a.txt', group: 'pending', key: hunkKey(t.hunks[0]) });
+    await vscode.commands.executeCommand('secondLook.reject', { root: repo, path: 'a.txt', group: 'pending', key: hunkKey(t.hunks[0]) });
     await until('the change is gone', () => !model.pendingFile('a.txt'));
     const out = execFileSync(cli, ['list'], { cwd: repo, encoding: 'utf8' });
     assert.match(out, /rejected in review/);
@@ -126,11 +126,11 @@ exports.run = async function run() {
   });
 
   await test('accept all and finish records the review', async () => {
-    await vscode.commands.executeCommand('gitReview.acceptAll', repo);
+    await vscode.commands.executeCommand('secondLook.acceptAll', repo);
     await until('nothing pending', () => model.state === 'reviewed');
     // the reject left an uncommitted edit; commit it without asking
-    await vscode.workspace.getConfiguration('gitReview').update('finish.commitEdits', 'always', vscode.ConfigurationTarget.Global);
-    await vscode.commands.executeCommand('gitReview.finish', repo);
+    await vscode.workspace.getConfiguration('secondLook').update('finish.commitEdits', 'always', vscode.ConfigurationTarget.Global);
+    await vscode.commands.executeCommand('secondLook.finish', repo);
     await until('a clean state', () => model.state === 'clean');
     const log = execFileSync('git', ['log', '-1', '--format=%s'], { cwd: repo, encoding: 'utf8' }).trim();
     assert.equal(log, 'Review edits on feature');

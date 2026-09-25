@@ -1,13 +1,13 @@
 {
-  "name": "git-review-vscode",
-  "displayName": "Git Review",
+  "name": "second-look",
+  "displayName": "Second Look",
   "description": "Review what your coding agent changed, change by change: accept, reject, edit, leave comments for the agent, and finish when you're done.",
   "version": "0.1.0",
   "publisher": "dnkats",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dnkats/git-review-vscode"
+    "url": "https://github.com/dnkats/second-look"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -21,6 +21,7 @@
     "code review",
     "agent",
     "claude",
+    "codex",
     "diff",
     "comments"
   ],
@@ -50,478 +51,478 @@
   },
   "contributes": {
     "views": {
-      "gitReview": [
+      "secondLook": [
         {
-          "id": "gitReview.view",
-          "name": "Review",
+          "id": "secondLook.view",
+          "name": "Second Look",
           "icon": "media/review.svg",
-          "contextualTitle": "Git Review"
+          "contextualTitle": "Second Look"
         }
       ]
     },
     "viewsWelcome": [
       {
-        "view": "gitReview.view",
+        "view": "secondLook.view",
         "contents": "Open a folder that is a git repository to review the changes in it.",
-        "when": "gitReview.state == noRepo"
+        "when": "secondLook.state == noRepo"
       },
       {
-        "view": "gitReview.view",
+        "view": "secondLook.view",
         "contents": "Looking for changes…",
-        "when": "gitReview.state == loading"
+        "when": "secondLook.state == loading"
       },
       {
-        "view": "gitReview.view",
-        "contents": "Nothing to review. Changes that you or an agent make in this repository show up here.\n[Review From…](command:gitReview.reviewFrom)",
-        "when": "gitReview.state == clean"
+        "view": "secondLook.view",
+        "contents": "Nothing to review. Changes that you or an agent make in this repository show up here.\n[Review From…](command:secondLook.reviewFrom)",
+        "when": "secondLook.state == clean"
       },
       {
-        "view": "gitReview.view",
+        "view": "secondLook.view",
         "contents": "Check out a branch to review the changes on it.",
-        "when": "gitReview.state == detached"
+        "when": "secondLook.state == detached"
       },
       {
-        "view": "gitReview.view",
-        "contents": "A terminal review (git review) is open in this checkout.\n[Take It Over](command:gitReview.takeOverTerminal)",
-        "when": "gitReview.state == terminal"
+        "view": "secondLook.view",
+        "contents": "A terminal review (git review) is open in this checkout.\n[Take It Over](command:secondLook.takeOverTerminal)",
+        "when": "secondLook.state == terminal"
       },
       {
-        "view": "gitReview.view",
-        "contents": "Something went wrong while reading the repository.\n[Refresh](command:gitReview.refresh)",
-        "when": "gitReview.state == error"
+        "view": "secondLook.view",
+        "contents": "Something went wrong while reading the repository.\n[Refresh](command:secondLook.refresh)",
+        "when": "secondLook.state == error"
       }
     ],
     "commands": [
       {
-        "command": "gitReview.refresh",
+        "command": "secondLook.refresh",
         "title": "Refresh",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(refresh)"
       },
       {
-        "command": "gitReview.openAll",
+        "command": "secondLook.openAll",
         "title": "Open All Changes to Review",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(diff-multiple)"
       },
       {
-        "command": "gitReview.finish",
+        "command": "secondLook.finish",
         "title": "Finish Review",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(check-all)"
       },
       {
-        "command": "gitReview.undo",
+        "command": "secondLook.undo",
         "title": "Undo Last Accept or Reject",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(discard)"
       },
       {
-        "command": "gitReview.reviewFrom",
+        "command": "secondLook.reviewFrom",
         "title": "Review From…",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(history)"
       },
       {
-        "command": "gitReview.acceptAll",
+        "command": "secondLook.acceptAll",
         "title": "Accept All Changes",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(check-all)"
       },
       {
-        "command": "gitReview.rejectAll",
+        "command": "secondLook.rejectAll",
         "title": "Reject All Changes",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(close-all)"
       },
       {
-        "command": "gitReview.accept",
+        "command": "secondLook.accept",
         "title": "Accept",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(check)"
       },
       {
-        "command": "gitReview.reject",
+        "command": "secondLook.reject",
         "title": "Reject",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(close)"
       },
       {
-        "command": "gitReview.unaccept",
+        "command": "secondLook.unaccept",
         "title": "Review Again",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(reply)"
       },
       {
-        "command": "gitReview.openChange",
+        "command": "secondLook.openChange",
         "title": "Open Change",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(go-to-file)"
       },
       {
-        "command": "gitReview.openAccepted",
+        "command": "secondLook.openAccepted",
         "title": "Open Accepted Change",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(go-to-file)"
       },
       {
-        "command": "gitReview.acceptAtCursor",
+        "command": "secondLook.acceptAtCursor",
         "title": "Accept Change at Cursor",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(check)"
       },
       {
-        "command": "gitReview.rejectAtCursor",
+        "command": "secondLook.rejectAtCursor",
         "title": "Reject Change at Cursor",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(close)"
       },
       {
-        "command": "gitReview.nextChange",
+        "command": "secondLook.nextChange",
         "title": "Next Change to Review",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(arrow-down)"
       },
       {
-        "command": "gitReview.previousChange",
+        "command": "secondLook.previousChange",
         "title": "Previous Change to Review",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(arrow-up)"
       },
       {
-        "command": "gitReview.reviewThisFile",
+        "command": "secondLook.reviewThisFile",
         "title": "Review Changes in This File",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(diff)"
       },
       {
-        "command": "gitReview.takeOverTerminal",
+        "command": "secondLook.takeOverTerminal",
         "title": "Take Over Terminal Review",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(terminal)"
       },
       {
-        "command": "gitReview.installSkill",
+        "command": "secondLook.installSkill",
         "title": "Install Agent Skill…",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(hubot)"
       },
       {
-        "command": "gitReview.copyComments",
+        "command": "secondLook.copyComments",
         "title": "Copy Open Comments as Prompt",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(copy)"
       },
       {
-        "command": "gitReview.comment.create",
+        "command": "secondLook.comment.create",
         "title": "Add Comment",
-        "category": "Git Review"
+        "category": "Second Look"
       },
       {
-        "command": "gitReview.comment.reply",
+        "command": "secondLook.comment.reply",
         "title": "Reply",
-        "category": "Git Review"
+        "category": "Second Look"
       },
       {
-        "command": "gitReview.comment.resolve",
+        "command": "secondLook.comment.resolve",
         "title": "Resolve",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(check)"
       },
       {
-        "command": "gitReview.comment.reopen",
+        "command": "secondLook.comment.reopen",
         "title": "Reopen",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(issue-reopened)"
       },
       {
-        "command": "gitReview.comment.delete",
+        "command": "secondLook.comment.delete",
         "title": "Delete Thread",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(trash)"
       },
       {
-        "command": "gitReview.comment.edit",
+        "command": "secondLook.comment.edit",
         "title": "Edit",
-        "category": "Git Review",
+        "category": "Second Look",
         "icon": "$(edit)"
       },
       {
-        "command": "gitReview.comment.save",
+        "command": "secondLook.comment.save",
         "title": "Save",
-        "category": "Git Review"
+        "category": "Second Look"
       },
       {
-        "command": "gitReview.comment.cancel",
+        "command": "secondLook.comment.cancel",
         "title": "Cancel",
-        "category": "Git Review"
+        "category": "Second Look"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "gitReview.accept",
+          "command": "secondLook.accept",
           "when": "false"
         },
         {
-          "command": "gitReview.reject",
+          "command": "secondLook.reject",
           "when": "false"
         },
         {
-          "command": "gitReview.unaccept",
+          "command": "secondLook.unaccept",
           "when": "false"
         },
         {
-          "command": "gitReview.openChange",
+          "command": "secondLook.openChange",
           "when": "false"
         },
         {
-          "command": "gitReview.openAccepted",
+          "command": "secondLook.openAccepted",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.create",
+          "command": "secondLook.comment.create",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.reply",
+          "command": "secondLook.comment.reply",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.resolve",
+          "command": "secondLook.comment.resolve",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.reopen",
+          "command": "secondLook.comment.reopen",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.delete",
+          "command": "secondLook.comment.delete",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.edit",
+          "command": "secondLook.comment.edit",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.save",
+          "command": "secondLook.comment.save",
           "when": "false"
         },
         {
-          "command": "gitReview.comment.cancel",
+          "command": "secondLook.comment.cancel",
           "when": "false"
         },
         {
-          "command": "gitReview.acceptAtCursor",
-          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff"
+          "command": "secondLook.acceptAtCursor",
+          "when": "secondLook.activeFileHasPending || secondLook.activeIsReviewDiff"
         },
         {
-          "command": "gitReview.rejectAtCursor",
-          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff"
+          "command": "secondLook.rejectAtCursor",
+          "when": "secondLook.activeFileHasPending || secondLook.activeIsReviewDiff"
         },
         {
-          "command": "gitReview.takeOverTerminal",
-          "when": "gitReview.state == terminal || gitReview.state == multi"
+          "command": "secondLook.takeOverTerminal",
+          "when": "secondLook.state == terminal || secondLook.state == multi"
         }
       ],
       "view/title": [
         {
-          "command": "gitReview.openAll",
-          "when": "view == gitReview.view && gitReview.hasPending",
+          "command": "secondLook.openAll",
+          "when": "view == secondLook.view && secondLook.hasPending",
           "group": "navigation@1"
         },
         {
-          "command": "gitReview.undo",
-          "when": "view == gitReview.view && gitReview.canUndo",
+          "command": "secondLook.undo",
+          "when": "view == secondLook.view && secondLook.canUndo",
           "group": "navigation@2"
         },
         {
-          "command": "gitReview.finish",
-          "when": "view == gitReview.view && gitReview.hasReview",
+          "command": "secondLook.finish",
+          "when": "view == secondLook.view && secondLook.hasReview",
           "group": "navigation@3"
         },
         {
-          "command": "gitReview.refresh",
-          "when": "view == gitReview.view",
+          "command": "secondLook.refresh",
+          "when": "view == secondLook.view",
           "group": "navigation@4"
         },
         {
-          "command": "gitReview.reviewFrom",
-          "when": "view == gitReview.view",
+          "command": "secondLook.reviewFrom",
+          "when": "view == secondLook.view",
           "group": "1_review@1"
         },
         {
-          "command": "gitReview.acceptAll",
-          "when": "view == gitReview.view && gitReview.hasPending",
+          "command": "secondLook.acceptAll",
+          "when": "view == secondLook.view && secondLook.hasPending",
           "group": "1_review@2"
         },
         {
-          "command": "gitReview.rejectAll",
-          "when": "view == gitReview.view && gitReview.hasPending",
+          "command": "secondLook.rejectAll",
+          "when": "view == secondLook.view && secondLook.hasPending",
           "group": "1_review@3"
         },
         {
-          "command": "gitReview.copyComments",
-          "when": "view == gitReview.view",
+          "command": "secondLook.copyComments",
+          "when": "view == secondLook.view",
           "group": "2_agent@1"
         },
         {
-          "command": "gitReview.installSkill",
-          "when": "view == gitReview.view",
+          "command": "secondLook.installSkill",
+          "when": "view == secondLook.view",
           "group": "2_agent@2"
         }
       ],
       "view/item/context": [
         {
-          "command": "gitReview.accept",
-          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "command": "secondLook.accept",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/",
           "group": "inline@1"
         },
         {
-          "command": "gitReview.reject",
-          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "command": "secondLook.reject",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/",
           "group": "inline@2"
         },
         {
-          "command": "gitReview.unaccept",
-          "when": "view == gitReview.view && viewItem =~ /^accepted(File|Hunk)$/",
+          "command": "secondLook.unaccept",
+          "when": "view == secondLook.view && viewItem =~ /^accepted(File|Hunk)$/",
           "group": "inline@1"
         },
         {
-          "command": "gitReview.openAll",
-          "when": "view == gitReview.view && viewItem == pendingGroup",
+          "command": "secondLook.openAll",
+          "when": "view == secondLook.view && viewItem == pendingGroup",
           "group": "inline@1"
         },
         {
-          "command": "gitReview.accept",
-          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "command": "secondLook.accept",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/",
           "group": "1_review@1"
         },
         {
-          "command": "gitReview.reject",
-          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "command": "secondLook.reject",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/",
           "group": "1_review@2"
         },
         {
-          "command": "gitReview.unaccept",
-          "when": "view == gitReview.view && viewItem =~ /^accepted(File|Hunk)$/",
+          "command": "secondLook.unaccept",
+          "when": "view == secondLook.view && viewItem =~ /^accepted(File|Hunk)$/",
           "group": "1_review@1"
         },
         {
-          "command": "gitReview.openChange",
-          "when": "view == gitReview.view && viewItem =~ /^pending(File|Hunk)$/",
+          "command": "secondLook.openChange",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/",
           "group": "2_open@1"
         },
         {
-          "command": "gitReview.openAccepted",
-          "when": "view == gitReview.view && viewItem =~ /^accepted(File|Hunk)$/",
+          "command": "secondLook.openAccepted",
+          "when": "view == secondLook.view && viewItem =~ /^accepted(File|Hunk)$/",
           "group": "2_open@1"
         }
       ],
       "editor/title": [
         {
-          "command": "gitReview.acceptAtCursor",
-          "when": "gitReview.activeIsReviewDiff",
+          "command": "secondLook.acceptAtCursor",
+          "when": "secondLook.activeIsReviewDiff",
           "group": "navigation@1"
         },
         {
-          "command": "gitReview.rejectAtCursor",
-          "when": "gitReview.activeIsReviewDiff",
+          "command": "secondLook.rejectAtCursor",
+          "when": "secondLook.activeIsReviewDiff",
           "group": "navigation@2"
         },
         {
-          "command": "gitReview.reviewThisFile",
-          "when": "gitReview.activeFileHasPending && !isInDiffEditor",
+          "command": "secondLook.reviewThisFile",
+          "when": "secondLook.activeFileHasPending && !isInDiffEditor",
           "group": "navigation@1"
         }
       ],
       "editor/context": [
         {
-          "command": "gitReview.acceptAtCursor",
-          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff",
-          "group": "1_gitReview@1"
+          "command": "secondLook.acceptAtCursor",
+          "when": "secondLook.activeFileHasPending || secondLook.activeIsReviewDiff",
+          "group": "1_secondLook@1"
         },
         {
-          "command": "gitReview.rejectAtCursor",
-          "when": "gitReview.activeFileHasPending || gitReview.activeIsReviewDiff",
-          "group": "1_gitReview@2"
+          "command": "secondLook.rejectAtCursor",
+          "when": "secondLook.activeFileHasPending || secondLook.activeIsReviewDiff",
+          "group": "1_secondLook@2"
         }
       ],
       "comments/commentThread/context": [
         {
-          "command": "gitReview.comment.create",
-          "when": "commentController == gitReview && commentThreadIsEmpty",
+          "command": "secondLook.comment.create",
+          "when": "commentController == secondLook && commentThreadIsEmpty",
           "group": "inline"
         },
         {
-          "command": "gitReview.comment.reply",
-          "when": "commentController == gitReview && !commentThreadIsEmpty",
+          "command": "secondLook.comment.reply",
+          "when": "commentController == secondLook && !commentThreadIsEmpty",
           "group": "inline"
         }
       ],
       "comments/commentThread/title": [
         {
-          "command": "gitReview.comment.resolve",
-          "when": "commentController == gitReview && commentThread == open",
+          "command": "secondLook.comment.resolve",
+          "when": "commentController == secondLook && commentThread == open",
           "group": "inline@1"
         },
         {
-          "command": "gitReview.comment.reopen",
-          "when": "commentController == gitReview && commentThread == resolved",
+          "command": "secondLook.comment.reopen",
+          "when": "commentController == secondLook && commentThread == resolved",
           "group": "inline@1"
         },
         {
-          "command": "gitReview.comment.delete",
-          "when": "commentController == gitReview && !commentThreadIsEmpty",
+          "command": "secondLook.comment.delete",
+          "when": "commentController == secondLook && !commentThreadIsEmpty",
           "group": "inline@2"
         }
       ],
       "comments/comment/title": [
         {
-          "command": "gitReview.comment.edit",
-          "when": "commentController == gitReview && comment == user",
+          "command": "secondLook.comment.edit",
+          "when": "commentController == secondLook && comment == user",
           "group": "inline"
         }
       ],
       "comments/comment/context": [
         {
-          "command": "gitReview.comment.cancel",
-          "when": "commentController == gitReview",
+          "command": "secondLook.comment.cancel",
+          "when": "commentController == secondLook",
           "group": "inline@1"
         },
         {
-          "command": "gitReview.comment.save",
-          "when": "commentController == gitReview",
+          "command": "secondLook.comment.save",
+          "when": "commentController == secondLook",
           "group": "inline@2"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "gitReview.acceptAtCursor",
+        "command": "secondLook.acceptAtCursor",
         "key": "alt+y",
-        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+        "when": "editorTextFocus && (secondLook.activeFileHasPending || secondLook.activeIsReviewDiff)"
       },
       {
-        "command": "gitReview.rejectAtCursor",
+        "command": "secondLook.rejectAtCursor",
         "key": "alt+n",
-        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+        "when": "editorTextFocus && (secondLook.activeFileHasPending || secondLook.activeIsReviewDiff)"
       },
       {
-        "command": "gitReview.nextChange",
+        "command": "secondLook.nextChange",
         "key": "alt+j",
-        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+        "when": "editorTextFocus && (secondLook.activeFileHasPending || secondLook.activeIsReviewDiff)"
       },
       {
-        "command": "gitReview.previousChange",
+        "command": "secondLook.previousChange",
         "key": "alt+k",
-        "when": "editorTextFocus && (gitReview.activeFileHasPending || gitReview.activeIsReviewDiff)"
+        "when": "editorTextFocus && (secondLook.activeFileHasPending || secondLook.activeIsReviewDiff)"
       }
     ],
     "configuration": {
-      "title": "Git Review",
+      "title": "Second Look",
       "properties": {
-        "gitReview.finish.commitEdits": {
+        "secondLook.finish.commitEdits": {
           "type": "string",
           "enum": [
             "ask",
@@ -536,17 +537,17 @@
           ],
           "description": "What Finish Review does with changes that are not committed yet."
         },
-        "gitReview.codeLens": {
+        "secondLook.codeLens": {
           "type": "boolean",
           "default": true,
           "description": "Show Accept and Reject above each change to review in the editor. In diff editors they appear only when diffEditor.codeLens is on."
         },
-        "gitReview.statusBar": {
+        "secondLook.statusBar": {
           "type": "boolean",
           "default": true,
           "description": "Show the number of changes to review in the status bar."
         },
-        "gitReview.highlightChanges": {
+        "secondLook.highlightChanges": {
           "type": "boolean",
           "default": true,
           "description": "Highlight the lines still to review in the editor."
@@ -561,8 +562,8 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "gitReview",
-          "title": "Review",
+          "id": "secondLook",
+          "title": "Second Look",
           "icon": "media/review.svg"
         }
       ]

@@ -1,11 +1,11 @@
-// review-comments: the agent's side of Git Review's code comments.
+// review-comments: the agent's side of Second Look's code comments.
 import { promises as fs } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
 import { CommentStore, Thread, newId, relocateThread, textLines } from '../comments/store';
 import { formatRejection, formatThread } from '../comments/format';
 
-const USAGE = `review-comments: read and answer the review comments left in VS Code (Git Review)
+const USAGE = `review-comments: read and answer the review comments left in VS Code (Second Look)
 
   review-comments list [--all] [--peek] [--json]
       Open comments with file, lines, the code they were written on and the

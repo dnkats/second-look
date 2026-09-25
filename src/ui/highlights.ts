@@ -50,7 +50,7 @@ export class Highlights implements vscode.Disposable {
   }
 
   async update(): Promise<void> {
-    const on = vscode.workspace.getConfiguration('gitReview').get<boolean>('highlightChanges', true);
+    const on = vscode.workspace.getConfiguration('secondLook').get<boolean>('highlightChanges', true);
     for (const ed of vscode.window.visibleTextEditors) {
       const doc = ed.document;
       const m = doc.uri.scheme === 'file' ? this.manager.modelFor(doc.uri) : undefined;

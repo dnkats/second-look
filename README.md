@@ -1,4 +1,4 @@
-# Git Review for VS Code
+# Second Look
 
 Review what a coding agent changed, one change at a time: accept it, reject
 it, edit it, or leave a comment the agent reads later. When you are through,
@@ -9,7 +9,7 @@ stage, commit or pick branches for any of this.
 
 ## How it works
 
-The Review icon in the activity bar opens the list of changes still to
+The Second Look icon in the activity bar opens the list of changes still to
 review, file by file, with every change inside a file listed under it. The
 line at the top says what the list covers, for example "Changes on damping
 since it left main".
@@ -55,7 +55,7 @@ you rejected, so it does not put them back. You resolve threads when you are
 satisfied.
 
 The agent learns this from a skill that ships with the extension. Install it
-once with **Git Review: Install Agent Skill…**; it goes to `~/.claude/skills`
+once with **Second Look: Install Agent Skill…**; it goes to `~/.claude/skills`
 (Claude Code) and `~/.agents/skills` (Codex, GitHub Copilot and other agents
 that read Agent Skills), on the machine where the extension runs. VS Code's own
 chat gets it automatically. The skill's command is
@@ -91,7 +91,7 @@ a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
 Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
 
 ```
-code --install-extension git-review-vscode-0.1.0.vsix
+code --install-extension second-look-0.1.0.vsix
 ```
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).
@@ -103,10 +103,10 @@ main's changes show up for review after a rebase.
 Everything is inside the checkout's git directory and never touches git's own
 index, the staging area:
 
-- `.git/git-review/<branch>.json`, `.index` and `.undo.json`: the review in
+- `.git/second-look/<branch>.json`, `.index` and `.undo.json`: the review in
   progress (the index file holds what you accepted),
-- `.git/git-review/comments.json`: the comments,
-- `refs/review-checklist/<branch>`: keeps the accepted content safe from
+- `.git/second-look/comments.json`: the comments,
+- `refs/second-look/<branch>`: keeps the accepted content safe from
   `git gc`,
 - `refs/reviewed/<branch>`: where the last finished review ended.
 
@@ -136,9 +136,9 @@ normal.
 
 ## Settings
 
-- `gitReview.finish.commitEdits`: `ask`, `always` or `never` commit
+- `secondLook.finish.commitEdits`: `ask`, `always` or `never` commit
   uncommitted changes when finishing.
-- `gitReview.codeLens`, `gitReview.highlightChanges`, `gitReview.statusBar`:
+- `secondLook.codeLens`, `secondLook.highlightChanges`, `secondLook.statusBar`:
   turn the links, the line highlights and the status bar count off.
 
 ## Development
@@ -147,7 +147,7 @@ normal.
 npm install
 npm test               # engine and comment tests on scratch repositories
 npm run test:vscode    # the extension in a real VS Code, headless via Xvfb
-npm run package        # builds git-review-vscode-<version>.vsix
+npm run package        # builds second-look-<version>.vsix
 node test/vscode/demo.mjs shots   # screenshots of the UI
 ```
 

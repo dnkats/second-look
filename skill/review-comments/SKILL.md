@@ -1,15 +1,15 @@
 ---
 name: review-comments
-description: Read and answer the code review comments the user left in VS Code with the Git Review extension, and see which changes they rejected. Use when the user asks you to check, read, look at or address their comments, review comments or review feedback.
+description: Read and answer the code review comments the user left in VS Code with the Second Look extension, and see which changes they rejected. Use when the user asks you to check, read, look at or address their comments, review comments or review feedback.
 license: MIT
 metadata:
-  source: https://github.com/dnkats/git-review-vscode
+  source: https://github.com/dnkats/second-look
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/review-comments *)
 ---
 
 # Review comments
 
-The user reviews your changes in VS Code with the Git Review extension and
+The user reviews your changes in VS Code with the Second Look extension and
 leaves comments on lines of code. The comments are stored in the repository's
 git directory. This skill's `scripts/review-comments` command reads and
 answers them. In Claude Code the command is

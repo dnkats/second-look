@@ -50,7 +50,7 @@ export class RepoModel implements vscode.Disposable {
     private readonly makeHooks: (model: RepoModel) => ReviewHooks,
   ) {
     this.comments = CommentStore.forGitDir(repo.gitDir);
-    const reviewDir = path.join(repo.gitDir, 'git-review');
+    const reviewDir = path.join(repo.gitDir, 'second-look');
     const onFile = (uri: vscode.Uri) => {
       // our own index writes would otherwise trigger refresh after refresh
       if (!uri.fsPath.startsWith(reviewDir)) {

@@ -8,5 +8,5 @@ fi
 if [ -f "$dir/node-path" ] && [ -x "$(cat "$dir/node-path")" ]; then
   exec "$(cat "$dir/node-path")" "$dir/review-comments.js" "$@"
 fi
-echo "review-comments needs Node.js: install it, or run 'Git Review: Install Agent Skill' in VS Code again." >&2
+echo "review-comments needs Node.js: install it, or run 'Second Look: Install Agent Skill' in VS Code again." >&2
 exit 1

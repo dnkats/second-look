@@ -122,7 +122,7 @@ test('finishing without a commit records the reviewed content; the next review s
   assert.notEqual(reviewed, git(dir, 'rev-parse', 'HEAD'));
   assert.equal(git(dir, 'rev-parse', `${reviewed}^`), git(dir, 'rev-parse', 'HEAD'));
   assert.ok(!existsSync(r.stateFile));
-  assert.throws(() => git(dir, 'show-ref', '--verify', '-q', 'refs/review-checklist/feature'));
+  assert.throws(() => git(dir, 'show-ref', '--verify', '-q', 'refs/second-look/feature'));
 
   const r2 = await openReview(dir);
   const s2 = await r2.ensure();

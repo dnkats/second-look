@@ -125,7 +125,7 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
     const single = this.manager.models.length === 1;
     const out: Node[] = [];
     if (m.state === 'terminal' && !single) {
-      out.push({ kind: 'message', model: m, label: 'A terminal review (git review) is open here — take it over', icon: 'terminal', command: { command: 'gitReview.takeOverTerminal', title: 'Take Over', arguments: [m.repo.root] } });
+      out.push({ kind: 'message', model: m, label: 'A terminal review (git review) is open here — take it over', icon: 'terminal', command: { command: 'secondLook.takeOverTerminal', title: 'Take Over', arguments: [m.repo.root] } });
     }
     if (m.state === 'error') {
       out.push({ kind: 'message', model: m, label: m.error ?? 'Something went wrong', icon: 'error' });
@@ -186,7 +186,7 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
         item.tooltip = `${f.path}\n${statusWords(f.status)}`;
         item.contextValue = n.group === 'pending' ? 'pendingFile' : 'acceptedFile';
         item.command = {
-          command: n.group === 'pending' ? 'gitReview.openChange' : 'gitReview.openAccepted',
+          command: n.group === 'pending' ? 'secondLook.openChange' : 'secondLook.openAccepted',
           title: 'Open',
           arguments: [fileTarget(n)],
         };
@@ -207,7 +207,7 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
         item.iconPath = new vscode.ThemeIcon(icon);
         item.contextValue = n.group === 'pending' ? 'pendingHunk' : 'acceptedHunk';
         item.command = {
-          command: n.group === 'pending' ? 'gitReview.openChange' : 'gitReview.openAccepted',
+          command: n.group === 'pending' ? 'secondLook.openChange' : 'secondLook.openAccepted',
           title: 'Open',
           arguments: [n.target],
         };

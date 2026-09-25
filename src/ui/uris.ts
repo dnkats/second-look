@@ -2,9 +2,9 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 
 /** Documents with the checklist's or the base's version of a file, for the left side of diffs. */
-export const CONTENT_SCHEME = 'git-review';
+export const CONTENT_SCHEME = 'second-look';
 /** Resource URIs of tree items, so they get file icons and our badges but not git's decorations. */
-export const ITEM_SCHEME = 'git-review-item';
+export const ITEM_SCHEME = 'second-look-item';
 
 export type Side = 'checklist' | 'base' | 'empty';
 

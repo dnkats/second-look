@@ -69,7 +69,7 @@ export class CommentStore {
   constructor(readonly file: string) {}
 
   static forGitDir(gitDir: string): CommentStore {
-    return new CommentStore(path.join(gitDir, 'git-review', 'comments.json'));
+    return new CommentStore(path.join(gitDir, 'second-look', 'comments.json'));
   }
 
   async read(): Promise<StoreData> {

@@ -21,24 +21,24 @@ export class Commands {
   register(context: vscode.ExtensionContext): void {
     const cmd = (id: string, fn: (...args: never[]) => Promise<unknown> | unknown) =>
       context.subscriptions.push(vscode.commands.registerCommand(id, (...args: never[]) => this.guard(() => fn(...args))));
-    cmd('gitReview.refresh', () => Promise.all(this.manager.models.map((m) => m.refresh())));
-    cmd('gitReview.openChange', (a: Arg) => this.openChange(a));
-    cmd('gitReview.openAccepted', (a: Arg) => this.openAccepted(a));
-    cmd('gitReview.openAll', (a: Arg) => this.openAll(a));
-    cmd('gitReview.accept', (a: Arg) => this.accept(a));
-    cmd('gitReview.reject', (a: Arg) => this.reject(a));
-    cmd('gitReview.unaccept', (a: Arg) => this.unaccept(a));
-    cmd('gitReview.acceptAll', (a: Arg) => this.acceptAll(a));
-    cmd('gitReview.rejectAll', (a: Arg) => this.rejectAll(a));
-    cmd('gitReview.acceptAtCursor', () => this.atCursor('accept'));
-    cmd('gitReview.rejectAtCursor', () => this.atCursor('reject'));
-    cmd('gitReview.nextChange', () => this.step(1));
-    cmd('gitReview.previousChange', () => this.step(-1));
-    cmd('gitReview.reviewThisFile', (a: Arg) => this.reviewThisFile(a));
-    cmd('gitReview.undo', (a: Arg) => this.undo(a));
-    cmd('gitReview.finish', (a: Arg) => this.finish(a));
-    cmd('gitReview.reviewFrom', (a: Arg) => this.reviewFrom(a));
-    cmd('gitReview.takeOverTerminal', (a: Arg) => this.takeOver(a));
+    cmd('secondLook.refresh', () => Promise.all(this.manager.models.map((m) => m.refresh())));
+    cmd('secondLook.openChange', (a: Arg) => this.openChange(a));
+    cmd('secondLook.openAccepted', (a: Arg) => this.openAccepted(a));
+    cmd('secondLook.openAll', (a: Arg) => this.openAll(a));
+    cmd('secondLook.accept', (a: Arg) => this.accept(a));
+    cmd('secondLook.reject', (a: Arg) => this.reject(a));
+    cmd('secondLook.unaccept', (a: Arg) => this.unaccept(a));
+    cmd('secondLook.acceptAll', (a: Arg) => this.acceptAll(a));
+    cmd('secondLook.rejectAll', (a: Arg) => this.rejectAll(a));
+    cmd('secondLook.acceptAtCursor', () => this.atCursor('accept'));
+    cmd('secondLook.rejectAtCursor', () => this.atCursor('reject'));
+    cmd('secondLook.nextChange', () => this.step(1));
+    cmd('secondLook.previousChange', () => this.step(-1));
+    cmd('secondLook.reviewThisFile', (a: Arg) => this.reviewThisFile(a));
+    cmd('secondLook.undo', (a: Arg) => this.undo(a));
+    cmd('secondLook.finish', (a: Arg) => this.finish(a));
+    cmd('secondLook.reviewFrom', (a: Arg) => this.reviewFrom(a));
+    cmd('secondLook.takeOverTerminal', (a: Arg) => this.takeOver(a));
   }
 
   private async guard(fn: () => unknown): Promise<void> {
@@ -51,7 +51,7 @@ export class Commands {
       } else if (e instanceof UndoConflictError) {
         void vscode.window.showWarningMessage(e.message);
       } else {
-        void vscode.window.showErrorMessage(`Git Review: ${(e as Error).message}`);
+        void vscode.window.showErrorMessage(`Second Look: ${(e as Error).message}`);
       }
     }
   }
@@ -397,7 +397,7 @@ export class Commands {
     }
     let commitMessage: string | undefined;
     if (await m.review.hasUncommitted()) {
-      const cfg = vscode.workspace.getConfiguration('gitReview');
+      const cfg = vscode.workspace.getConfiguration('secondLook');
       let mode = cfg.get<string>('finish.commitEdits', 'ask');
       if (mode === 'ask') {
         const choice = await vscode.window.showInformationMessage(
