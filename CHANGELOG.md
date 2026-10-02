@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+The + for a new comment says what it does: "Add comment for the agent
+(Second Look)" in the menu VS Code shows when another extension offers
+comments on the same line.
+
 ## 0.1.1
 
 Accept Block and Accept Selection next to Revert Block in the review diff

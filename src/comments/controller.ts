@@ -65,7 +65,8 @@ export class CommentsUI implements vscode.Disposable {
     private readonly manager: Manager,
     private readonly onFirstComment: () => void,
   ) {
-    this.controller = vscode.comments.createCommentController('secondLook', 'Review Comments');
+    // the label is what the + in the gutter offers when another extension has comments there too
+    this.controller = vscode.comments.createCommentController('secondLook', 'Add comment for the agent (Second Look)');
     this.controller.options = {
       prompt: 'Comment for the agent',
       placeHolder: 'Your agent reads this when you ask it to check your comments',
