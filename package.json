@@ -2,7 +2,7 @@
   "name": "second-look",
   "displayName": "Second Look",
   "description": "Review what your coding agent changed, change by change: accept, reject, edit, leave comments for the agent, and finish when you're done.",
-  "version": "0.1.2",
+  "version": "0.1.11",
   "publisher": "dnkats",
   "license": "MIT",
   "repository": {

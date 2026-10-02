@@ -22,17 +22,34 @@ accepted so far, on the right the file as it is now. For every change you can
 - **edit** the file: your own edits are changes like any other; accept them
   when they look right.
 
-The buttons are on the rows of the list, in the diff's title bar (for the
-change at the cursor), as Accept and Reject links above each change in the
-diff and in the editor (below long changes too), and on the keys Alt+Y
-(accept) and Alt+N (reject). The circled arrow in the title bar, or Alt+J,
-goes to the next change to review, on into the next file; Alt+K goes back. In
-the ordinary editor the lines still to review are highlighted.
+The buttons are on the rows of the list, as Accept and Reject links above each
+change in the review diff and in the editor (below long changes too; other
+diffs of the file, such as git's, compare something else and get none), and
+on the keys Alt+Y (accept) and Alt+N (reject), which act on the change at the
+cursor. The circled arrows at the front of the title bar, or Alt+F5 and
+Shift+Alt+F5, go to the next and previous change to review, on into the next
+file (VS Code's own next and previous change, which Second Look takes over in
+review diffs and in files with changes to review); the line at the top of the
+view lists these keys while there is something to review.
+**Preferences: Keyboard Shortcuts**, searched for Second Look, changes them.
+In the
+ordinary editor the lines still to review are highlighted, with a dashed line
+where text was removed; hovering them shows the text they replaced.
 
-In the diff, VS Code shows its own buttons next to the change under the
-cursor or the mouse: Revert Block, which rejects, and from Second Look Accept
-Block (Accept Selection when lines are selected). VS Code shows Accept Block
-only once you allow it, because it uses an API that is still in preview: run
+The first button on each row of the list, Open File, opens the change in the
+file itself instead of the diff. The editor shows the file as it is, while a
+side-by-side diff pads each side with empty space to keep both aligned. To
+make that what a click does, set `secondLook.openIn` to `editor`: the next
+change in another file then opens in the editor too, and the row button
+becomes Open Diff. Deleted files always open in a diff.
+
+In the diff, Second Look adds buttons next to the change under the cursor or
+the mouse: Accept Block and Reject Block (Accept Selection when lines are
+selected). VS Code puts its own Revert Block there too, an arrow (or under
+`⋯` for short changes); that one is a plain edit of the file: Ctrl+Z in the
+file takes it back, Second Look's Undo does not, and the agent is not told.
+VS Code shows Second Look's buttons only once you allow them, because they
+use an API that is still in preview: run
 **Preferences: Configure Runtime Arguments**, add
 
 ```
@@ -40,7 +57,12 @@ only once you allow it, because it uses an API that is still in preview: run
 ```
 
 to the file that opens, and restart VS Code. With Remote-SSH this is the file
-on your own computer, where the VS Code window runs.
+on your own computer, where the VS Code window runs. Once Accept Block is
+there, Second Look leaves its Accept and Reject links out of review diffs: the
+gutter has both, and each link line costs an empty line on the other side. The
+editor keeps its links. Over Remote-SSH, VS Code does not tell the extension
+that it allows the API, so the links go only after your first click on Accept
+Block or Reject Block, and again after each VS Code update.
 
 Accepted changes are listed under **Accepted**; **Review Again** puts one back
 on the list. **Undo** in the view's title bar takes back the last accept or
@@ -91,9 +113,16 @@ and always the uncommitted changes. **Review From…** in the view's menu starts
 over from any commit instead. When you rebase a side branch onto a newer main,
 or merge main into it, the review moves along: what came from main does not
 show up for review, and what you accepted stays accepted. A file where main's
-changes conflict with the review is shown for review again. On main itself the
-review does not follow origin, so a push never hides unreviewed commits;
-changes you pull show up for review too.
+changes conflict with the review is shown for review again.
+
+On main itself the review does not follow origin. Pushing changes nothing:
+commits you have not reviewed stay on the list after the push. Pulling puts
+everything the pull brought on the list, since to the review it is new on
+main like the agent's commits. When you pull on main and do not want to read
+what others merged, review your own changes first, pull, then choose **Review
+From…** → **From now on**: the review starts at the pulled commit and still
+covers your uncommitted changes. What you had accepted is dropped, which is
+why your own changes come first.
 
 Each branch has its own review. Switch branches, come back, and it is as you
 left it.
@@ -105,7 +134,7 @@ a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
 Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
 
 ```
-code --install-extension second-look-0.1.2.vsix
+code --install-extension second-look-0.1.11.vsix
 ```
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).
@@ -144,10 +173,23 @@ normal.
   committed.
 - To show its Accept and Reject links in diffs, Second Look turns VS Code's
   `diffEditor.codeLens` on by default. Links of other extensions then show in
-  diffs too; set `diffEditor.codeLens` to `false` to turn them all off.
-- Accept Block uses a proposed VS Code API: it needs the runtime argument
-  above, and an extension using it cannot be published on the Marketplace as
-  it is.
+  diffs too, Julia's Run, Above, Below and Debug above each cell for example.
+  **Hide CodeLens Links in Diffs** in the Second Look view's `...` menu turns
+  them all off (it sets `diffEditor.codeLens` to `false`); Show turns them
+  back on.
+- Accept Block and Reject Block use a proposed VS Code API: they need the
+  runtime argument above, and an extension using it cannot be published on
+  the Marketplace as it is.
+- An editor's title bar shows about seven buttons and moves the rest under
+  `...`, the later ones first; which ones depends on what all extensions add
+  for that file. Second Look's arrows come first, VS Code's own diff arrows
+  late, so those can end up there. Right-click a button you don't need and
+  hide it to make room.
+- After a diff has switched to the one-column view on a narrow editor, its left
+  side no longer wraps lines (VS Code issue
+  [#314898](https://github.com/microsoft/vscode/issues/314898)); Alt+Z twice
+  wraps it again, and `"diffEditor.useInlineViewWhenSpaceIsLimited": false`
+  avoids the switch.
 - Binary files, renames (a deletion plus a new file), submodules and changes of
   the file mode are accepted or rejected as whole files.
 - One person reviews a checkout at a time.
@@ -160,6 +202,8 @@ normal.
   turn the links, the line highlights and the status bar count off.
 - `secondLook.codeLensBelow`: changes of at least this many lines (10) get
   the Accept and Reject links below them too; 0 turns that off.
+- `secondLook.openIn`: `diff` (the default) or `editor`, where a click in the
+  list opens a change.
 
 ## Development
 
