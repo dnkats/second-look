@@ -24,10 +24,10 @@ accepted so far, on the right the file as it is now. For every change you can
 
 The buttons are on the rows of the list, in the diff's title bar (for the
 change at the cursor), as Accept and Reject links above each change in the
-editor, and on the keys Alt+Y (accept) and Alt+N (reject). The circled arrow
-in the title bar, or Alt+J, goes to the next change to review, on into the
-next file; Alt+K goes back. In the ordinary editor the lines still
-to review are highlighted.
+diff and in the editor (below long changes too), and on the keys Alt+Y
+(accept) and Alt+N (reject). The circled arrow in the title bar, or Alt+J,
+goes to the next change to review, on into the next file; Alt+K goes back. In
+the ordinary editor the lines still to review are highlighted.
 
 In the diff, VS Code shows its own buttons next to the change under the
 cursor or the mouse: Revert Block, which rejects, and from Second Look Accept
@@ -60,12 +60,13 @@ review starts from what you finished with.
 ## Comments for the agent
 
 Hover a line number and click `+`, or select lines first, to leave a comment.
-Comments stay on their lines when the file changes and say so when the code
-they were on is gone. They are yours until you ask the agent to "check my
-comments": it then lists them, with the code each one was written on, does
-what they say and answers in the thread. It also learns which of its changes
-you rejected, so it does not put them back. You resolve threads when you are
-satisfied.
+If another extension offers comments on that line too, VS Code first shows a
+menu; pick **Add comment for the agent (Second Look)**. Comments stay on their
+lines when the file changes and say so when the code they were on is gone.
+They are yours until you ask the agent to "check my comments": it then lists
+them, with the code each one was written on, does what they say and answers in
+the thread. It also learns which of its changes you rejected, so it does not
+put them back. You resolve threads when you are satisfied.
 
 The agent learns this from a skill that ships with the extension. Install it
 once with **Second Look: Install Agent Skill…**; it goes to `~/.claude/skills`
@@ -104,7 +105,7 @@ a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
 Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
 
 ```
-code --install-extension second-look-0.1.1.vsix
+code --install-extension second-look-0.1.2.vsix
 ```
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).
@@ -169,6 +170,10 @@ npm run test:vscode    # the extension in a real VS Code, headless via Xvfb
 npm run package        # builds second-look-<version>.vsix
 node test/vscode/demo.mjs shots   # screenshots of the UI
 ```
+
+Both VS Code runs use `/usr/share/code/code` unless `VSCODE_PATH` names
+another VS Code; the screenshot script also reads `GRV_SCREEN` (screen size)
+and `GRV_SETTINGS` (extra settings as JSON).
 
 The engine (`src/engine`) and the comment store (`src/comments/store.ts`) do
 not depend on VS Code; the agent's command (`src/cli`) is built into the
