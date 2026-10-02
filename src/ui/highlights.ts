@@ -1,10 +1,27 @@
 import * as vscode from 'vscode';
+import { Hunk } from '../engine';
 import { Manager } from './model';
+
+const HOVER_LINES = 40;
+
+/** The text a change replaced or removed, as a hover for its mark; nothing for a pure addition. */
+function replacedText(h: Hunk, languageId: string): vscode.MarkdownString | undefined {
+  if (h.oldLines.length === 0) {
+    return undefined;
+  }
+  const md = new vscode.MarkdownString(h.newCount === 0 ? 'Removed here:' : 'Before the change:');
+  md.appendCodeblock(h.oldLines.slice(0, HOVER_LINES).map((l) => l.replace(/\r?\n$/, '')).join('\n'), languageId);
+  if (h.oldLines.length > HOVER_LINES) {
+    md.appendMarkdown(`… ${h.oldLines.length - HOVER_LINES} more lines`);
+  }
+  return md;
+}
 
 /**
  * Marks the lines still to review in ordinary editors: new or changed lines
  * get the diff editor's inserted-line background, removed lines a dashed line
- * where they were. Diff editors show changes themselves and are left alone.
+ * where they were, and hovering a mark shows the text it replaced. Diff
+ * editors show changes themselves and are left alone.
  */
 export class Highlights implements vscode.Disposable {
   private readonly added = vscode.window.createTextEditorDecorationType({
@@ -61,14 +78,15 @@ export class Highlights implements vscode.Disposable {
         continue;
       }
       const texts = await m.review.pendingTexts(rel, doc.isDirty ? doc.getText() : undefined);
-      const added: vscode.Range[] = [];
-      const removed: vscode.Range[] = [];
+      const added: vscode.DecorationOptions[] = [];
+      const removed: vscode.DecorationOptions[] = [];
       for (const h of texts.hunks) {
+        const hoverMessage = replacedText(h, doc.languageId);
         if (h.newCount > 0) {
-          added.push(new vscode.Range(h.newStart, 0, h.newStart + h.newCount - 1, 0));
+          added.push({ range: new vscode.Range(h.newStart, 0, h.newStart + h.newCount - 1, 0), hoverMessage });
         } else {
           const line = Math.min(h.newStart, Math.max(doc.lineCount - 1, 0));
-          removed.push(new vscode.Range(line, 0, line, 0));
+          removed.push({ range: new vscode.Range(line, 0, line, 0), hoverMessage });
         }
       }
       ed.setDecorations(this.added, added);

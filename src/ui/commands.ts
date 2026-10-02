@@ -7,6 +7,9 @@ import { CONTENT_SCHEME, contentUri, fileUri, parseContentUri } from './uris';
 
 type Arg = Node | Target | vscode.Uri | string | undefined;
 
+/** Where a change opens: in a diff against the accepted text, or in the file itself. */
+type View = 'diff' | 'editor';
+
 /** What the diff editor's gutter toolbar passes to its buttons. */
 interface GutterContext {
   originalUri: vscode.Uri;
@@ -30,6 +33,8 @@ export class Commands {
       context.subscriptions.push(vscode.commands.registerCommand(id, (...args: never[]) => this.guard(() => fn(...args))));
     cmd('secondLook.refresh', () => Promise.all(this.manager.models.map((m) => m.refresh())));
     cmd('secondLook.openChange', (a: Arg) => this.openChange(a));
+    cmd('secondLook.openInEditor', (a: Arg) => this.openChange(a, 'editor'));
+    cmd('secondLook.openInDiff', (a: Arg) => this.openChange(a, 'diff'));
     cmd('secondLook.openAccepted', (a: Arg) => this.openAccepted(a));
     cmd('secondLook.openAll', (a: Arg) => this.openAll(a));
     cmd('secondLook.accept', (a: Arg) => this.accept(a));
@@ -129,13 +134,33 @@ export class Commands {
     return t.status ?? list.find((f) => f.path === t.path)?.status;
   }
 
-  private async openChange(a: Arg): Promise<void> {
+  /** The view secondLook.openIn asks for. */
+  private view(): View {
+    return vscode.workspace.getConfiguration('secondLook').get<View>('openIn', 'diff');
+  }
+
+  /** Whether the active tab is a review diff. */
+  private inReviewDiff(): boolean {
+    const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+    return input instanceof vscode.TabInputTextDiff && input.original.scheme === CONTENT_SCHEME;
+  }
+
+  /** Opens a pending file or change in the given view; the setting decides when none is given. */
+  private async openChange(a: Arg, view: View = this.view()): Promise<void> {
     const t = this.target(a);
     if (!t) {
       return;
     }
     const m = this.modelOf(t);
     const status = this.statusOf(m, t);
+    const file = m.pendingFile(t.path);
+    // a deleted or binary file has nothing to show in the editor
+    if (view === 'editor' && status !== 'D' && !file?.binary) {
+      const line = t.line ?? file?.hunks[0]?.newStart;
+      const selection = line !== undefined ? new vscode.Range(line, 0, line, 0) : undefined;
+      await vscode.window.showTextDocument(fileUri(t.root, t.path), { preview: true, selection });
+      return;
+    }
     const left = status === 'A' ? contentUri(t.root, t.path, 'empty') : contentUri(t.root, t.path, 'checklist');
     const right = status === 'D' ? contentUri(t.root, t.path + '​', 'empty') : fileUri(t.root, t.path);
     const opts: vscode.TextDocumentShowOptions = { preview: true };
@@ -182,7 +207,7 @@ export class Commands {
     }
     const ed = vscode.window.activeTextEditor;
     const line = ed && ed.document.uri.fsPath === fileUri(t.root, t.path).fsPath ? ed.selection.active.line : undefined;
-    await this.openChange({ ...t, line });
+    await this.openChange({ ...t, line }, 'diff');
   }
 
   // ---- accepting and rejecting ----------------------------------------------
@@ -372,16 +397,18 @@ export class Commands {
       return;
     }
     if (next) {
-      await this.openChange({ root: m.repo.root, path: rel, group: 'pending', line: next.newStart });
+      // the cursor is on the diff's left side; the same diff with the cursor on the right
+      await this.openChange({ root: m.repo.root, path: rel, group: 'pending', line: next.newStart }, 'diff');
       return;
     }
-    // on to the next file with something to review
+    // on to the next file with something to review, staying in diffs when in one
     const idx = m.pending.findIndex((f) => f.path === rel);
     const others = dir === 1 ? m.pending.slice(idx + 1) : m.pending.slice(0, Math.max(idx, 0)).reverse();
     const target = others[0] ?? (idx === -1 ? m.pending[0] : undefined);
     if (target) {
       const h = dir === 1 ? target.hunks[0] : target.hunks[target.hunks.length - 1];
-      await this.openChange({ root: m.repo.root, path: target.path, group: 'pending', status: target.status, line: h?.newStart });
+      const view = this.inReviewDiff() ? 'diff' : this.view();
+      await this.openChange({ root: m.repo.root, path: target.path, group: 'pending', status: target.status, line: h?.newStart }, view);
     } else if (m.pending.length === 0) {
       void vscode.window.setStatusBarMessage('Nothing left to review', 3000);
     }

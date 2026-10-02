@@ -170,6 +170,41 @@ exports.run = async function run() {
     ]);
   });
 
+  await test('with openIn set to editor, changes open in the file itself; from a review diff, the next file opens in a diff', async () => {
+    const activeTab = () => vscode.window.tabGroups.activeTabGroup.activeTab;
+    const cfg = vscode.workspace.getConfiguration('secondLook');
+    await cfg.update('openIn', 'editor', vscode.ConfigurationTarget.Global);
+    try {
+      fs.writeFileSync(file('a.txt').fsPath, fs.readFileSync(file('a.txt').fsPath, 'utf8').replace('line 20\n', 'line twenty\n'));
+      const [h] = (await until('a.txt pending', () => model.pendingFile('a.txt'))).hunks;
+      assert.equal(h.newStart, 19);
+      await vscode.commands.executeCommand('secondLook.openChange', { root: repo, path: 'a.txt', group: 'pending', key: hunkKey(h), line: h.newStart });
+      await until('a.txt in the editor', () => activeTab()?.input instanceof vscode.TabInputText && activeTab().input.uri.fsPath === file('a.txt').fsPath);
+      assert.equal(vscode.window.activeTextEditor.selection.active.line, 19);
+      await vscode.commands.executeCommand('secondLook.nextChange');
+      await until('long.txt in the editor', () => activeTab()?.input instanceof vscode.TabInputText && activeTab().input.uri.fsPath === file('long.txt').fsPath);
+
+      await vscode.commands.executeCommand('secondLook.reviewThisFile', file('a.txt'));
+      const ed = await until('the a.txt diff', () => activeTab()?.input instanceof vscode.TabInputTextDiff && vscode.window.activeTextEditor?.document.uri.fsPath === file('a.txt').fsPath && vscode.window.activeTextEditor);
+      ed.selection = new vscode.Selection(19, 0, 19, 0);
+      await vscode.commands.executeCommand('secondLook.nextChange');
+      await until('long.txt in a diff', () => activeTab()?.input instanceof vscode.TabInputTextDiff && activeTab().input.modified.fsPath === file('long.txt').fsPath);
+    } finally {
+      await cfg.update('openIn', undefined, vscode.ConfigurationTarget.Global);
+    }
+  });
+
+  await test('the row buttons open a change the other way: Open File, Open Diff', async () => {
+    const activeTab = () => vscode.window.tabGroups.activeTabGroup.activeTab;
+    const files = await api.tree.getChildren((await api.tree.getChildren())[0]);
+    const [hunk] = await api.tree.getChildren(files.find((n) => n.file.path === 'a.txt'));
+    await vscode.commands.executeCommand('secondLook.openInEditor', hunk);
+    await until('a.txt in the editor', () => activeTab()?.input instanceof vscode.TabInputText && activeTab().input.uri.fsPath === file('a.txt').fsPath);
+    assert.equal(vscode.window.activeTextEditor.selection.active.line, 19);
+    await vscode.commands.executeCommand('secondLook.openInDiff', hunk);
+    await until('the a.txt diff', () => activeTab()?.input instanceof vscode.TabInputTextDiff && activeTab().input.modified.fsPath === file('a.txt').fsPath);
+  });
+
   const failed = results.filter((r) => r.startsWith('FAIL'));
   console.log(results.join('\n'));
   if (failed.length > 0) {

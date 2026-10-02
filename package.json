@@ -166,6 +166,18 @@
         "icon": "$(go-to-file)"
       },
       {
+        "command": "secondLook.openInEditor",
+        "title": "Open File",
+        "category": "Second Look",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "secondLook.openInDiff",
+        "title": "Open Diff",
+        "category": "Second Look",
+        "icon": "$(diff)"
+      },
+      {
         "command": "secondLook.acceptBlock",
         "title": "Accept Block",
         "category": "Second Look",
@@ -293,6 +305,14 @@
           "when": "false"
         },
         {
+          "command": "secondLook.openInEditor",
+          "when": "false"
+        },
+        {
+          "command": "secondLook.openInDiff",
+          "when": "false"
+        },
+        {
           "command": "secondLook.comment.create",
           "when": "false"
         },
@@ -394,6 +414,16 @@
       ],
       "view/item/context": [
         {
+          "command": "secondLook.openInEditor",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/ && config.secondLook.openIn != editor",
+          "group": "inline@0"
+        },
+        {
+          "command": "secondLook.openInDiff",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/ && config.secondLook.openIn == editor",
+          "group": "inline@0"
+        },
+        {
           "command": "secondLook.accept",
           "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/",
           "group": "inline@1"
@@ -432,6 +462,16 @@
           "command": "secondLook.openChange",
           "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/",
           "group": "2_open@1"
+        },
+        {
+          "command": "secondLook.openInEditor",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/ && config.secondLook.openIn != editor",
+          "group": "2_open@2"
+        },
+        {
+          "command": "secondLook.openInDiff",
+          "when": "view == secondLook.view && viewItem =~ /^pending(File|Hunk)$/ && config.secondLook.openIn == editor",
+          "group": "2_open@2"
         },
         {
           "command": "secondLook.openAccepted",
@@ -595,7 +635,20 @@
         "secondLook.highlightChanges": {
           "type": "boolean",
           "default": true,
-          "description": "Highlight the lines still to review in the editor."
+          "description": "Highlight the lines still to review in the editor, with the text they replaced on hover."
+        },
+        "secondLook.openIn": {
+          "type": "string",
+          "enum": [
+            "diff",
+            "editor"
+          ],
+          "default": "diff",
+          "enumDescriptions": [
+            "A diff of the accepted text against the file as it is now.",
+            "The file itself, with the changes highlighted: a dashed line where text was removed, the old text on hover."
+          ],
+          "description": "Where a click on a file or change in the list opens it, and where the next change continues into another file (from a review diff it stays in diffs). Deleted and binary files always open in a diff."
         }
       }
     },
