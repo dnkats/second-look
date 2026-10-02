@@ -193,13 +193,13 @@
         "command": "secondLook.nextChange",
         "title": "Next Change to Review",
         "category": "Second Look",
-        "icon": "$(arrow-down)"
+        "icon": "$(arrow-circle-down)"
       },
       {
         "command": "secondLook.previousChange",
         "title": "Previous Change to Review",
         "category": "Second Look",
-        "icon": "$(arrow-up)"
+        "icon": "$(arrow-circle-up)"
       },
       {
         "command": "secondLook.reviewThisFile",
@@ -451,6 +451,11 @@
           "group": "navigation@2"
         },
         {
+          "command": "secondLook.nextChange",
+          "when": "secondLook.activeIsReviewDiff || (secondLook.activeFileHasPending && !isInDiffEditor)",
+          "group": "navigation@3"
+        },
+        {
           "command": "secondLook.reviewThisFile",
           "when": "secondLook.activeFileHasPending && !isInDiffEditor",
           "group": "navigation@1"
@@ -574,7 +579,13 @@
         "secondLook.codeLens": {
           "type": "boolean",
           "default": true,
-          "description": "Show Accept and Reject above each change to review in the editor. In diff editors they appear only when diffEditor.codeLens is on."
+          "description": "Show Accept and Reject above each change to review, in the editor and in diffs. Second Look turns diffEditor.codeLens on by default so they show in diffs."
+        },
+        "secondLook.codeLensBelow": {
+          "type": "number",
+          "default": 10,
+          "minimum": 0,
+          "description": "Also show Accept and Reject below changes of at least this many lines; 0 turns it off."
         },
         "secondLook.statusBar": {
           "type": "boolean",
@@ -601,6 +612,9 @@
           "icon": "media/review.svg"
         }
       ]
+    },
+    "configurationDefaults": {
+      "diffEditor.codeLens": true
     }
   },
   "enabledApiProposals": [

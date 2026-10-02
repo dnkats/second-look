@@ -24,8 +24,9 @@ accepted so far, on the right the file as it is now. For every change you can
 
 The buttons are on the rows of the list, in the diff's title bar (for the
 change at the cursor), as Accept and Reject links above each change in the
-editor, and on the keys Alt+Y (accept) and Alt+N (reject); Alt+J and Alt+K
-move to the next and previous change. In the ordinary editor the lines still
+editor, and on the keys Alt+Y (accept) and Alt+N (reject). The circled arrow
+in the title bar, or Alt+J, goes to the next change to review, on into the
+next file; Alt+K goes back. In the ordinary editor the lines still
 to review are highlighted.
 
 In the diff, VS Code shows its own buttons next to the change under the
@@ -140,8 +141,9 @@ normal.
 - VS Code's Source Control view keeps showing git's own changes (uncommitted
   against HEAD). They differ from the review list whenever the agent has
   committed.
-- In diff editors the Accept and Reject links appear only with the setting
-  `diffEditor.codeLens` on; the title bar buttons and keys work regardless.
+- To show its Accept and Reject links in diffs, Second Look turns VS Code's
+  `diffEditor.codeLens` on by default. Links of other extensions then show in
+  diffs too; set `diffEditor.codeLens` to `false` to turn them all off.
 - Accept Block uses a proposed VS Code API: it needs the runtime argument
   above, and an extension using it cannot be published on the Marketplace as
   it is.
@@ -155,6 +157,8 @@ normal.
   uncommitted changes when finishing.
 - `secondLook.codeLens`, `secondLook.highlightChanges`, `secondLook.statusBar`:
   turn the links, the line highlights and the status bar count off.
+- `secondLook.codeLensBelow`: changes of at least this many lines (10) get
+  the Accept and Reject links below them too; 0 turns that off.
 
 ## Development
 

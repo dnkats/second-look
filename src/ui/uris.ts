@@ -9,12 +9,13 @@ export const ITEM_SCHEME = 'second-look-item';
 export type Side = 'checklist' | 'base' | 'empty';
 
 export function contentUri(root: string, rel: string, side: Side): vscode.Uri {
-  return vscode.Uri.from({ scheme: CONTENT_SCHEME, path: '/' + rel, query: JSON.stringify({ root, side }) });
+  // the file's own path, so diffs and the multi-file view see the same file on both sides, not a rename
+  return vscode.Uri.from({ scheme: CONTENT_SCHEME, path: fileUri(root, rel).path, query: JSON.stringify({ root, rel, side }) });
 }
 
 export function parseContentUri(uri: vscode.Uri): { root: string; rel: string; side: Side } {
-  const q = JSON.parse(uri.query) as { root: string; side: Side };
-  return { root: q.root, rel: uri.path.slice(1), side: q.side };
+  const q = JSON.parse(uri.query) as { root: string; rel?: string; side: Side };
+  return { root: q.root, rel: q.rel ?? uri.path.slice(1), side: q.side };
 }
 
 export function itemUri(rel: string, status: string, group: string): vscode.Uri {

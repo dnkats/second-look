@@ -154,6 +154,22 @@ exports.run = async function run() {
     await until('b.txt accepted', () => !model.pendingFile('b.txt'));
   });
 
+  await test('a long change gets Accept and Reject below it as well', async () => {
+    fs.writeFileSync(file('long.txt').fsPath, Array.from({ length: 12 }, (_, i) => `new ${i + 1}\n`).join(''));
+    await until('long.txt pending', () => model.pendingFile('long.txt'));
+    const doc = await vscode.workspace.openTextDocument(file('long.txt'));
+    const lenses = await until('four lenses', async () => {
+      const l = await vscode.commands.executeCommand('vscode.executeCodeLensProvider', doc.uri);
+      return l && l.length === 4 ? l : undefined;
+    });
+    assert.deepEqual(lenses.map((l) => [l.range.start.line, l.command.title]), [
+      [0, '$(check) Accept'],
+      [0, '$(close) Reject'],
+      [12, '$(check) Accept above'],
+      [12, '$(close) Reject above'],
+    ]);
+  });
+
   const failed = results.filter((r) => r.startsWith('FAIL'));
   console.log(results.join('\n'));
   if (failed.length > 0) {
