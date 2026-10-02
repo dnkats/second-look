@@ -232,6 +232,16 @@
         "icon": "$(hubot)"
       },
       {
+        "command": "secondLook.hideDiffLinks",
+        "title": "Hide CodeLens Links in Diffs",
+        "category": "Second Look"
+      },
+      {
+        "command": "secondLook.showDiffLinks",
+        "title": "Show CodeLens Links in Diffs",
+        "category": "Second Look"
+      },
+      {
         "command": "secondLook.copyComments",
         "title": "Copy Open Comments as Prompt",
         "category": "Second Look",
@@ -307,6 +317,14 @@
         {
           "command": "secondLook.openInEditor",
           "when": "false"
+        },
+        {
+          "command": "secondLook.hideDiffLinks",
+          "when": "config.diffEditor.codeLens"
+        },
+        {
+          "command": "secondLook.showDiffLinks",
+          "when": "!config.diffEditor.codeLens"
         },
         {
           "command": "secondLook.openInDiff",
@@ -410,6 +428,16 @@
           "command": "secondLook.installSkill",
           "when": "view == secondLook.view",
           "group": "2_agent@2"
+        },
+        {
+          "command": "secondLook.hideDiffLinks",
+          "when": "view == secondLook.view && config.diffEditor.codeLens",
+          "group": "3_show@1"
+        },
+        {
+          "command": "secondLook.showDiffLinks",
+          "when": "view == secondLook.view && !config.diffEditor.codeLens",
+          "group": "3_show@1"
         }
       ],
       "view/item/context": [
@@ -619,7 +647,7 @@
         "secondLook.codeLens": {
           "type": "boolean",
           "default": true,
-          "description": "Show Accept and Reject above each change to review, in the editor and in diffs. Second Look turns diffEditor.codeLens on by default so they show in diffs."
+          "description": "Show Accept and Reject above each change to review, in the editor and in review diffs. Second Look turns diffEditor.codeLens on by default so they show in diffs (links of other extensions too); review diffs go without them once Second Look knows that the diff's gutter has Accept Block."
         },
         "secondLook.codeLensBelow": {
           "type": "number",

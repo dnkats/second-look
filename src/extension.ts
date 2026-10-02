@@ -28,7 +28,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   const view = vscode.window.createTreeView('secondLook.view', { treeDataProvider: tree, showCollapseAll: true });
   context.subscriptions.push(view);
 
-  const lenses = new ReviewLenses(manager);
+  const log = vscode.window.createOutputChannel('Second Look', { log: true });
+  context.subscriptions.push(log);
+  // VS Code shows the Accept Block buttons in review diffs only where it allows the proposed API. A local
+  // extension host is told so, a remote one (SSH) is not: there the first click on one of them tells it,
+  // remembered per VS Code version in case the runtime argument goes away.
+  const proposals = (context.extension.packageJSON.enabledApiProposals as string[] | undefined) ?? [];
+  const seenKey = `acceptBlockSeen@${vscode.version}`;
+  const allowed = proposals.includes('contribDiffEditorGutterToolBarMenus');
+  const lenses = new ReviewLenses(manager, allowed || context.globalState.get<boolean>(seenKey, false));
+  const where = vscode.env.remoteName ? `, ${vscode.env.remoteName}` : '';
+  let how = 'unknown until it is first used';
+  if (allowed) {
+    how = 'allowed';
+  } else if (lenses.gutterButtons) {
+    how = 'used before';
+  }
+  log.info(`Second Look ${context.extension.packageJSON.version} in VS Code ${vscode.version}${where}; Accept Block in review diffs: ${how}`);
+  const gutterButtonUsed = async () => {
+    if (!lenses.gutterButtons) {
+      lenses.gutterButtons = true;
+      lenses.refresh();
+      await context.globalState.update(seenKey, true);
+      log.info('A gutter button was used, so review diffs have them');
+    }
+  };
   context.subscriptions.push(vscode.languages.registerCodeLensProvider({ scheme: 'file' }, lenses));
   const highlights = new Highlights(manager);
   context.subscriptions.push(highlights);
@@ -38,7 +62,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   status.command = 'secondLook.view.focus';
   context.subscriptions.push(status);
 
-  new Commands(manager).register(context);
+  new Commands(manager, gutterButtonUsed).register(context);
   const comments = new CommentsUI(manager, () => void offerSkill(context));
   comments.register(context);
   context.subscriptions.push(comments);
@@ -71,6 +95,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
     vscode.window.tabGroups.onDidChangeTabs(() => {
       void setContexts(manager);
       highlights.schedule();
+      // which links show depends on where the file is open
+      lenses.refresh();
     }),
   );
   context.subscriptions.push(
@@ -88,7 +114,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   await manager.discover();
   update();
   // for the integration tests
-  return { manager, comments, tree, view };
+  return { manager, comments, tree, view, lenses };
 }
 
 function header(m: RepoModel): string {

@@ -26,7 +26,11 @@ function isTarget(a: unknown): a is Target {
 }
 
 export class Commands {
-  constructor(private readonly manager: Manager) {}
+  constructor(
+    private readonly manager: Manager,
+    /** Told when a button in the diff gutter runs, which shows that VS Code has them. */
+    private readonly gutterButtonUsed: () => unknown = () => undefined,
+  ) {}
 
   register(context: vscode.ExtensionContext): void {
     const cmd = (id: string, fn: (...args: never[]) => Promise<unknown> | unknown) =>
@@ -53,6 +57,22 @@ export class Commands {
     cmd('secondLook.finish', (a: Arg) => this.finish(a));
     cmd('secondLook.reviewFrom', (a: Arg) => this.reviewFrom(a));
     cmd('secondLook.takeOverTerminal', (a: Arg) => this.takeOver(a));
+    cmd('secondLook.showDiffLinks', () => this.setDiffLinks(true));
+    cmd('secondLook.hideDiffLinks', () => this.setDiffLinks(false));
+  }
+
+  /**
+   * The view menu's switch for links (CodeLens) in diffs: VS Code's own
+   * diffEditor.codeLens, for all extensions. Showing drops the user's value, so
+   * Second Look's default applies.
+   */
+  private async setDiffLinks(show: boolean): Promise<void> {
+    const cfg = vscode.workspace.getConfiguration('diffEditor');
+    await cfg.update('codeLens', show ? undefined : false, vscode.ConfigurationTarget.Global);
+    if (show && !vscode.workspace.getConfiguration('diffEditor').get<boolean>('codeLens')) {
+      // a workspace or remote setting still says no
+      await cfg.update('codeLens', true, vscode.ConfigurationTarget.Global);
+    }
   }
 
   private async guard(fn: () => unknown): Promise<void> {
@@ -316,6 +336,7 @@ export class Commands {
     if (!ctx?.originalUri || ctx.originalUri.scheme !== CONTENT_SCHEME || typeof ctx.originalWithModifiedChanges !== 'string') {
       return;
     }
+    await this.gutterButtonUsed();
     const { root, rel } = parseContentUri(ctx.originalUri);
     const m = this.modelOf({ root, path: rel, group: 'pending' });
     await this.saveDirty(m, rel);

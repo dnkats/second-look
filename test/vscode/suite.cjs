@@ -4,44 +4,23 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const vscode = require('vscode');
+const { until, suite } = require('./helpers.cjs');
 
 const repo = process.env.GRV_TEST_REPO;
 const root = process.env.GRV_ROOT;
 const { hunkKey } = require(path.join(root, 'dist/test/engine.cjs'));
 const cli = path.join(root, 'skill/review-comments/scripts/review-comments');
 
-async function until(what, fn, ms = 15000) {
-  const end = Date.now() + ms;
-  let last;
-  while (Date.now() < end) {
-    try {
-      last = await fn();
-      if (last) {
-        return last;
-      }
-    } catch (e) {
-      last = e;
-    }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error(`timed out waiting for ${what}: ${last}`);
-}
-
-const results = [];
-async function test(name, fn) {
-  try {
-    await fn();
-    results.push(`ok ${name}`);
-  } catch (e) {
-    results.push(`FAIL ${name}: ${e.stack || e}`);
-  }
-}
-
 exports.run = async function run() {
+  const { test, done } = suite();
   const ext = vscode.extensions.getExtension('dnkats.second-look');
   const api = await ext.activate();
   const model = await until('the repository model', () => api.manager.models.find((m) => m.state === 'changes'));
   const file = (rel) => vscode.Uri.file(path.join(repo, rel));
+
+  await test('without the proposed API, the extension assumes no Accept Block', async () => {
+    assert.equal(api.lenses.gutterButtons, false);
+  });
 
   await test('the view lists the agent\'s changes', async () => {
     assert.deepEqual(model.pending.map((f) => `${f.status} ${f.path}`), ['M a.txt', 'A b.txt', 'D c.txt']);
@@ -144,7 +123,7 @@ exports.run = async function run() {
     assert.equal(model.reviewState.kind, 'lastReview');
   });
 
-  await test('the Accept Block button in the diff gutter accepts that block', async () => {
+  await test('the Accept Block button in the diff gutter accepts that block, and tells that diffs have it', async () => {
     const { contentUri } = { contentUri: (rel) => vscode.Uri.from({ scheme: 'second-look', path: '/' + rel, query: JSON.stringify({ root: repo, side: 'checklist' }) }) };
     const original = contentUri('b.txt');
     const left = (await vscode.workspace.openTextDocument(original)).getText();
@@ -152,12 +131,14 @@ exports.run = async function run() {
     assert.notEqual(left, current);
     await vscode.commands.executeCommand('secondLook.acceptBlock', { originalUri: original, modifiedUri: file('b.txt'), originalWithModifiedChanges: current });
     await until('b.txt accepted', () => !model.pendingFile('b.txt'));
+    assert.equal(api.lenses.gutterButtons, true);
   });
 
   await test('a long change gets Accept and Reject below it as well', async () => {
     fs.writeFileSync(file('long.txt').fsPath, Array.from({ length: 12 }, (_, i) => `new ${i + 1}\n`).join(''));
     await until('long.txt pending', () => model.pendingFile('long.txt'));
     const doc = await vscode.workspace.openTextDocument(file('long.txt'));
+    await vscode.window.showTextDocument(doc);
     const lenses = await until('four lenses', async () => {
       const l = await vscode.commands.executeCommand('vscode.executeCodeLensProvider', doc.uri);
       return l && l.length === 4 ? l : undefined;
@@ -205,9 +186,34 @@ exports.run = async function run() {
     await until('the a.txt diff', () => activeTab()?.input instanceof vscode.TabInputTextDiff && activeTab().input.modified.fsPath === file('a.txt').fsPath);
   });
 
-  const failed = results.filter((r) => r.startsWith('FAIL'));
-  console.log(results.join('\n'));
-  if (failed.length > 0) {
-    throw new Error(`${failed.length} of ${results.length} integration tests failed`);
-  }
+  await test('once Accept Block was used, a review diff gets no links', async () => {
+    // the row buttons left a.txt's review diff open
+    const t = vscode.window.tabGroups.activeTabGroup.activeTab;
+    assert.ok(t.input instanceof vscode.TabInputTextDiff && t.input.original.scheme === 'second-look');
+    assert.equal((await vscode.commands.executeCommand('vscode.executeCodeLensProvider', file('a.txt'))).length, 0);
+  });
+
+  await test('the view menu switches VS Code\'s links in diffs, for all extensions', async () => {
+    const value = () => vscode.workspace.getConfiguration('diffEditor').get('codeLens');
+    assert.equal(value(), true);
+    await vscode.commands.executeCommand('secondLook.hideDiffLinks');
+    await until('diffEditor.codeLens off', () => value() === false);
+    await vscode.commands.executeCommand('secondLook.showDiffLinks');
+    await until('diffEditor.codeLens on again', () => value() === true);
+    // back to Second Look's default, not a value in the user's settings
+    assert.equal(vscode.workspace.getConfiguration('diffEditor').inspect('codeLens').globalValue, undefined);
+  });
+
+  await test('a diff comparing something else, such as git\'s, gets no links', async () => {
+    const a = file('a.txt');
+    const index = vscode.Uri.from({ scheme: 'git', path: a.path, query: JSON.stringify({ path: a.fsPath, ref: '~' }) });
+    await vscode.commands.executeCommand('vscode.diff', index, a, 'a.txt (Working Tree)');
+    await until('git\'s diff', () => {
+      const t = vscode.window.tabGroups.activeTabGroup.activeTab;
+      return t?.input instanceof vscode.TabInputTextDiff && t.input.original.scheme === 'git';
+    });
+    assert.equal((await vscode.commands.executeCommand('vscode.executeCodeLensProvider', a)).length, 0);
+  });
+
+  done();
 };
