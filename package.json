@@ -190,6 +190,12 @@
         "icon": "$(check)"
       },
       {
+        "command": "secondLook.rejectBlock",
+        "title": "Reject Block",
+        "category": "Second Look",
+        "icon": "$(close)"
+      },
+      {
         "command": "secondLook.acceptAtCursor",
         "title": "Accept Change at Cursor",
         "category": "Second Look",
@@ -380,6 +386,10 @@
         },
         {
           "command": "secondLook.acceptSelection",
+          "when": "false"
+        },
+        {
+          "command": "secondLook.rejectBlock",
           "when": "false"
         }
       ],
@@ -587,6 +597,11 @@
       "diffEditor/gutter/hunk": [
         {
           "command": "secondLook.acceptBlock",
+          "group": "primary@5",
+          "when": "diffEditorOriginalUri =~ /^second-look:/"
+        },
+        {
+          "command": "secondLook.rejectBlock",
           "group": "primary@5",
           "when": "diffEditorOriginalUri =~ /^second-look:/"
         }

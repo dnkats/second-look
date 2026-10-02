@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { BaseChoice, Hunk, StaleChangeError, UndoConflictError, hunkAtLine, hunkKey } from '../engine';
+import { BaseChoice, Hunk, StaleChangeError, UndoConflictError, hunkAtLine, hunkKey, splitLines } from '../engine';
 import { Manager, RepoModel } from './model';
 import { Node, Target, fileTarget } from './tree';
 import { CONTENT_SCHEME, contentUri, fileUri, parseContentUri } from './uris';
@@ -10,8 +10,15 @@ type Arg = Node | Target | vscode.Uri | string | undefined;
 /** Where a change opens: in a diff against the accepted text, or in the file itself. */
 type View = 'diff' | 'editor';
 
+/** Lines startLineNumber up to endLineNumberExclusive, counted from 1. */
+interface LineRange {
+  startLineNumber: number;
+  endLineNumberExclusive: number;
+}
+
 /** What the diff editor's gutter toolbar passes to its buttons. */
 interface GutterContext {
+  mapping?: { original: LineRange; modified: LineRange };
   originalUri: vscode.Uri;
   modifiedUri: vscode.Uri;
   originalWithModifiedChanges: string;
@@ -48,6 +55,7 @@ export class Commands {
     cmd('secondLook.rejectAll', (a: Arg) => this.rejectAll(a));
     cmd('secondLook.acceptBlock', (ctx: GutterContext) => this.acceptBlock(ctx));
     cmd('secondLook.acceptSelection', (ctx: GutterContext) => this.acceptBlock(ctx));
+    cmd('secondLook.rejectBlock', (ctx: GutterContext) => this.rejectBlock(ctx));
     cmd('secondLook.acceptAtCursor', () => this.atCursor('accept'));
     cmd('secondLook.rejectAtCursor', () => this.atCursor('reject'));
     cmd('secondLook.nextChange', () => this.step(1));
@@ -341,6 +349,37 @@ export class Commands {
     const m = this.modelOf({ root, path: rel, group: 'pending' });
     await this.saveDirty(m, rel);
     await m.review!.acceptContent(rel, ctx.originalWithModifiedChanges);
+    await m.refresh();
+  }
+
+  /**
+   * The Reject Block button in a review diff's gutter: rejects that block the
+   * way Reject does, so Undo takes it back and the agent hears of it. VS Code's
+   * own Revert Block is a plain edit of the file.
+   */
+  private async rejectBlock(ctx: GutterContext): Promise<void> {
+    const map = ctx?.mapping;
+    if (!map || !ctx.originalUri || ctx.originalUri.scheme !== CONTENT_SCHEME) {
+      return;
+    }
+    await this.gutterButtonUsed();
+    const { root, rel } = parseContentUri(ctx.originalUri);
+    const m = this.modelOf({ root, path: rel, group: 'pending' });
+    await this.saveDirty(m, rel);
+    const t = await m.review!.pendingTexts(rel);
+    const os = map.original.startLineNumber - 1;
+    const oe = map.original.endLineNumberExclusive - 1;
+    const ns = map.modified.startLineNumber - 1;
+    const ne = map.modified.endLineNumberExclusive - 1;
+    const block: Hunk = {
+      oldStart: os,
+      oldCount: oe - os,
+      newStart: ns,
+      newCount: ne - ns,
+      oldLines: splitLines(t.oldText).slice(os, oe),
+      newLines: splitLines(t.newText).slice(ns, ne),
+    };
+    await m.review!.rejectBlock(rel, block);
     await m.refresh();
   }
 

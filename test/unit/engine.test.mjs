@@ -30,6 +30,19 @@ test('a side branch is reviewed from where it left main', async () => {
   assert.equal(git(dir, 'status', '--porcelain'), '');
 });
 
+test('rejecting a block given by its lines, as the diff gutter hands it over', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  await r.ensure();
+  const block = { oldStart: 24, oldCount: 1, newStart: 24, newCount: 1, oldLines: ['line 25\n'], newLines: ['twenty-five\n'] };
+  // lines that are not in the file any more: the diff was stale
+  await assert.rejects(r.rejectBlock('a.txt', { ...block, newLines: ['something else\n'] }), engine.StaleChangeError);
+  await r.rejectBlock('a.txt', block);
+  assert.equal(read(dir, 'a.txt'), replaceLine(lines(30), 3, 'three\n'));
+  assert.equal(await r.undo(), 'reject a change in a.txt');
+  assert.equal(read(dir, 'a.txt'), replaceLine(replaceLine(lines(30), 3, 'three\n'), 25, 'twenty-five\n'));
+});
+
 test('accepting, rejecting and moving back single hunks', async () => {
   const dir = agentBranch();
   const r = await openReview(dir);

@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { GitError } from './git';
-import { Hunk, HunkKey, applyHunk, computeHunks, decodeText, findHunk, revertHunk } from './hunks';
+import { Hunk, HunkKey, applyHunk, computeHunks, decodeText, findHunk, revertHunk, splitLines } from './hunks';
 import { WorktreeIO, worktreeMode } from './io';
 import { EMPTY_TREE, Repo } from './repo';
 
@@ -598,20 +598,41 @@ export class Review {
       if (!h) {
         throw new StaleChangeError();
       }
-      const entry = await this.indexEntry(p);
-      const prev = await this.io.read(p);
-      const before = prev ? await this.hashRaw(prev, true) : null;
-      const result = revertHunk(t.newText, h);
-      if (!entry && result.length === 0) {
-        await this.io.remove(p);
-      } else {
-        await this.io.write(p, Buffer.from(result, 'utf8'), entry?.mode);
-      }
-      const now = await this.io.read(p);
-      const after = now ? await this.hashRaw(now, false) : null;
-      const rejection = await this.hooks.onReject?.({ path: p, line: h.newStart + 1, removed: h.newLines, restored: h.oldLines });
-      await this.pushUndo({ kind: 'worktree', label: `reject a change in ${p}`, path: p, before, after, rejection });
+      await this.rejectUnlocked(p, t.newText, h);
     });
+  }
+
+  /**
+   * Rejects the block h of file p, given by its lines: what the diff editor's
+   * Reject Block hands over, whose blocks VS Code cuts on its own.
+   */
+  rejectBlock(p: string, h: Hunk): Promise<void> {
+    return this.exclusive(async () => {
+      await this.requireState();
+      const t = await this.pendingTexts(p);
+      const now = splitLines(t.newText).slice(h.newStart, h.newStart + h.newCount);
+      if (now.length !== h.newLines.length || now.some((l, i) => l !== h.newLines[i])) {
+        throw new StaleChangeError();
+      }
+      await this.rejectUnlocked(p, t.newText, h);
+    });
+  }
+
+  /** Puts the accepted lines of h back into file p, whose text is `current`, telling the agent and recording the undo. */
+  private async rejectUnlocked(p: string, current: string, h: Hunk): Promise<void> {
+    const entry = await this.indexEntry(p);
+    const prev = await this.io.read(p);
+    const before = prev ? await this.hashRaw(prev, true) : null;
+    const result = revertHunk(current, h);
+    if (!entry && result.length === 0) {
+      await this.io.remove(p);
+    } else {
+      await this.io.write(p, Buffer.from(result, 'utf8'), entry?.mode);
+    }
+    const now = await this.io.read(p);
+    const after = now ? await this.hashRaw(now, false) : null;
+    const rejection = await this.hooks.onReject?.({ path: p, line: h.newStart + 1, removed: h.newLines, restored: h.oldLines });
+    await this.pushUndo({ kind: 'worktree', label: `reject a change in ${p}`, path: p, before, after, rejection });
   }
 
   acceptFile(p: string): Promise<void> {
