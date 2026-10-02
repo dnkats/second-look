@@ -509,19 +509,14 @@
       ],
       "editor/title": [
         {
-          "command": "secondLook.acceptAtCursor",
-          "when": "secondLook.activeIsReviewDiff",
-          "group": "navigation@1"
-        },
-        {
-          "command": "secondLook.rejectAtCursor",
-          "when": "secondLook.activeIsReviewDiff",
-          "group": "navigation@2"
+          "command": "secondLook.previousChange",
+          "when": "secondLook.activeIsReviewDiff || (secondLook.activeFileHasPending && !isInDiffEditor)",
+          "group": "navigation@-2"
         },
         {
           "command": "secondLook.nextChange",
           "when": "secondLook.activeIsReviewDiff || (secondLook.activeFileHasPending && !isInDiffEditor)",
-          "group": "navigation@3"
+          "group": "navigation@-1"
         },
         {
           "command": "secondLook.reviewThisFile",
