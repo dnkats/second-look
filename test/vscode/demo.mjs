@@ -107,7 +107,6 @@ const user = path.join(tmp, 'user');
 mkdirSync(path.join(user, 'User'), { recursive: true });
 writeFileSync(path.join(user, 'User', 'settings.json'), JSON.stringify({
   'window.newWindowDimensions': 'maximized',
-  'diffEditor.codeLens': true,
   'workbench.startupEditor': 'none',
   'workbench.tips.enabled': false,
   'chat.disableAIFeatures': true,
@@ -115,10 +114,12 @@ writeFileSync(path.join(user, 'User', 'settings.json'), JSON.stringify({
   'editor.minimap.enabled': false,
   'git.openRepositoryInParentFolders': 'never',
   'workbench.colorTheme': 'Default Light Modern',
+  'diffEditor.renderSideBySide': !process.env.GRV_INLINE,
+  ...JSON.parse(process.env.GRV_SETTINGS ?? '{}'),
 }, null, 1));
 
 const display = ':98';
-const xvfb = spawn('/usr/bin/Xvfb', [display, '-screen', '0', '1600x1000x24'], { stdio: 'ignore' });
+const xvfb = spawn('/usr/bin/Xvfb', [display, '-screen', '0', process.env.GRV_SCREEN ?? '1600x1000x24'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 800));
 process.env.DISPLAY = display;
 
@@ -141,7 +142,8 @@ try {
     vscodeExecutablePath: process.env.VSCODE_PATH ?? '/usr/share/code/code',
     extensionDevelopmentPath: root,
     extensionTestsPath: path.join(root, 'test/vscode/demo.cjs'),
-    launchArgs: [repo, '--user-data-dir', user, '--extensions-dir', path.join(tmp, 'ext'), '--disable-workspace-trust', '--no-sandbox', '--disable-gpu'],
+    // the gutter buttons use a proposed API, which a stable VS Code allows only when asked
+    launchArgs: [repo, '--user-data-dir', user, '--extensions-dir', path.join(tmp, 'ext'), '--disable-workspace-trust', '--no-sandbox', '--disable-gpu', '--enable-proposed-api', 'dnkats.second-look'],
     extensionTestsEnv: { GRV_TEST_REPO: repo, GRV_ROOT: root, GRV_TMP: tmp, DISPLAY: display },
   });
 } finally {

@@ -38,7 +38,7 @@ exports.run = async function run() {
   const solverNode = nodes.find((n) => n.file.path === 'src/solver.jl');
   const hunkNodes = await api.tree.getChildren(solverNode);
   await api.view.reveal(hunkNodes[0], { expand: true, select: false });
-  await vscode.commands.executeCommand('secondLook.openChange', { root: repo, path: 'src/solver.jl', group: 'pending', line: solver.hunks[1].newStart });
+  await vscode.commands.executeCommand('secondLook.openChange', { root: repo, path: 'src/solver.jl', group: 'pending', line: solver.hunks[2].newStart + 1 });
   await sleep(1500);
   await scene(1);
 
@@ -63,6 +63,11 @@ exports.run = async function run() {
   await vscode.window.showTextDocument(doc, { preview: false });
   await sleep(1500);
   await scene(3);
+
+  // every file to review in one editor
+  await vscode.commands.executeCommand('secondLook.openAll', repo);
+  await sleep(2500);
+  await scene(4);
 
   // the agent's view of the comments
   fs.writeFileSync(path.join(tmp, 'cli-output.txt'), execFileSync(cli, ['list', '--peek'], { cwd: repo, encoding: 'utf8' }));
