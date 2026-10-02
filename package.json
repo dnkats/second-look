@@ -627,13 +627,13 @@
       },
       {
         "command": "secondLook.nextChange",
-        "key": "alt+j",
-        "when": "editorTextFocus && (secondLook.activeFileHasPending || secondLook.activeIsReviewDiff)"
+        "key": "alt+f5",
+        "when": "editorTextFocus && (secondLook.activeIsReviewDiff || (secondLook.activeFileHasPending && !isInDiffEditor))"
       },
       {
         "command": "secondLook.previousChange",
-        "key": "alt+k",
-        "when": "editorTextFocus && (secondLook.activeFileHasPending || secondLook.activeIsReviewDiff)"
+        "key": "shift+alt+f5",
+        "when": "editorTextFocus && (secondLook.activeIsReviewDiff || (secondLook.activeFileHasPending && !isInDiffEditor))"
       }
     ],
     "configuration": {

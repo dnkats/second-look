@@ -117,12 +117,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   return { manager, comments, tree, view, lenses };
 }
 
+// no-break spaces keep each key with its word when the line wraps
+const keys = ['Alt+F5 next', 'Alt+Y accept', 'Alt+N reject', 'Shift+Alt+F5 back'].map((k) => k.replace(' ', '\u00a0')).join(', ');
+
 function header(m: RepoModel): string {
   if (m.state === 'reviewed') {
     return repoDescription(m);
   }
   const files = m.pending.length;
-  return `${describeBase(m)}. ${m.pendingHunkCount} to review in ${files} file${files === 1 ? '' : 's'}.`;
+  // the keys work where the change is, in the editor or the diff; a view message is one paragraph of plain text
+  return `${describeBase(m)}. ${m.pendingHunkCount} to review in ${files} file${files === 1 ? '' : 's'}. Keys in the editor: ${keys}.`;
 }
 
 async function setContexts(manager: Manager): Promise<void> {
