@@ -7,6 +7,13 @@ import { CONTENT_SCHEME, contentUri, fileUri, parseContentUri } from './uris';
 
 type Arg = Node | Target | vscode.Uri | string | undefined;
 
+/** What the diff editor's gutter toolbar passes to its buttons. */
+interface GutterContext {
+  originalUri: vscode.Uri;
+  modifiedUri: vscode.Uri;
+  originalWithModifiedChanges: string;
+}
+
 function isNode(a: unknown): a is Node {
   return typeof a === 'object' && a !== null && 'kind' in a && 'model' in a;
 }
@@ -30,6 +37,8 @@ export class Commands {
     cmd('secondLook.unaccept', (a: Arg) => this.unaccept(a));
     cmd('secondLook.acceptAll', (a: Arg) => this.acceptAll(a));
     cmd('secondLook.rejectAll', (a: Arg) => this.rejectAll(a));
+    cmd('secondLook.acceptBlock', (ctx: GutterContext) => this.acceptBlock(ctx));
+    cmd('secondLook.acceptSelection', (ctx: GutterContext) => this.acceptBlock(ctx));
     cmd('secondLook.acceptAtCursor', () => this.atCursor('accept'));
     cmd('secondLook.rejectAtCursor', () => this.atCursor('reject'));
     cmd('secondLook.nextChange', () => this.step(1));
@@ -271,6 +280,21 @@ export class Commands {
     }
     await this.saveDirty(m);
     await m.review.rejectAll();
+    await m.refresh();
+  }
+
+  /**
+   * The Accept Block and Accept Selection buttons in a review diff's gutter:
+   * VS Code hands over the accepted text with that block or selection applied.
+   */
+  private async acceptBlock(ctx: GutterContext): Promise<void> {
+    if (!ctx?.originalUri || ctx.originalUri.scheme !== CONTENT_SCHEME || typeof ctx.originalWithModifiedChanges !== 'string') {
+      return;
+    }
+    const { root, rel } = parseContentUri(ctx.originalUri);
+    const m = this.modelOf({ root, path: rel, group: 'pending' });
+    await this.saveDirty(m, rel);
+    await m.review!.acceptContent(rel, ctx.originalWithModifiedChanges);
     await m.refresh();
   }
 

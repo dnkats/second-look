@@ -144,6 +144,16 @@ exports.run = async function run() {
     assert.equal(model.reviewState.kind, 'lastReview');
   });
 
+  await test('the Accept Block button in the diff gutter accepts that block', async () => {
+    const { contentUri } = { contentUri: (rel) => vscode.Uri.from({ scheme: 'second-look', path: '/' + rel, query: JSON.stringify({ root: repo, side: 'checklist' }) }) };
+    const original = contentUri('b.txt');
+    const left = (await vscode.workspace.openTextDocument(original)).getText();
+    const current = fs.readFileSync(file('b.txt').fsPath, 'utf8');
+    assert.notEqual(left, current);
+    await vscode.commands.executeCommand('secondLook.acceptBlock', { originalUri: original, modifiedUri: file('b.txt'), originalWithModifiedChanges: current });
+    await until('b.txt accepted', () => !model.pendingFile('b.txt'));
+  });
+
   const failed = results.filter((r) => r.startsWith('FAIL'));
   console.log(results.join('\n'));
   if (failed.length > 0) {

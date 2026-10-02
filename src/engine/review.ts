@@ -549,6 +549,25 @@ export class Review {
     });
   }
 
+  /**
+   * Makes `text` the accepted version of file p: what the diff editor's gutter
+   * buttons hand over, the accepted text with one block or selection applied.
+   */
+  acceptContent(p: string, text: string): Promise<void> {
+    return this.exclusive(async () => {
+      const state = await this.requireState();
+      const before = (await this.indexEntry(p)) ?? null;
+      let after: IndexEntry | null = null;
+      if (text.length > 0 || (await this.io.read(p)) !== undefined) {
+        const mode = before?.mode ?? (await this.worktreeEntry(p))?.mode ?? '100644';
+        after = { mode, sha: await this.hashText(text, p) };
+      }
+      await this.setEntry(p, after);
+      await this.pushUndo({ kind: 'index', label: `accept a change in ${p}`, path: p, before, after });
+      await this.protect(state);
+    });
+  }
+
   unacceptHunk(p: string, key: HunkKey): Promise<void> {
     return this.exclusive(async () => {
       const state = await this.requireState();

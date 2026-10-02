@@ -2,7 +2,7 @@
   "name": "second-look",
   "displayName": "Second Look",
   "description": "Review what your coding agent changed, change by change: accept, reject, edit, leave comments for the agent, and finish when you're done.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "dnkats",
   "license": "MIT",
   "repository": {
@@ -166,6 +166,18 @@
         "icon": "$(go-to-file)"
       },
       {
+        "command": "secondLook.acceptBlock",
+        "title": "Accept Block",
+        "category": "Second Look",
+        "icon": "$(check)"
+      },
+      {
+        "command": "secondLook.acceptSelection",
+        "title": "Accept Selection",
+        "category": "Second Look",
+        "icon": "$(check)"
+      },
+      {
         "command": "secondLook.acceptAtCursor",
         "title": "Accept Change at Cursor",
         "category": "Second Look",
@@ -323,6 +335,14 @@
         {
           "command": "secondLook.takeOverTerminal",
           "when": "secondLook.state == terminal || secondLook.state == multi"
+        },
+        {
+          "command": "secondLook.acceptBlock",
+          "when": "false"
+        },
+        {
+          "command": "secondLook.acceptSelection",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -495,6 +515,20 @@
           "when": "commentController == secondLook",
           "group": "inline@2"
         }
+      ],
+      "diffEditor/gutter/hunk": [
+        {
+          "command": "secondLook.acceptBlock",
+          "group": "primary@5",
+          "when": "diffEditorOriginalUri =~ /^second-look:/"
+        }
+      ],
+      "diffEditor/gutter/selection": [
+        {
+          "command": "secondLook.acceptSelection",
+          "group": "primary@5",
+          "when": "diffEditorOriginalUri =~ /^second-look:/"
+        }
       ]
     },
     "keybindings": [
@@ -568,5 +602,8 @@
         }
       ]
     }
-  }
+  },
+  "enabledApiProposals": [
+    "contribDiffEditorGutterToolBarMenus"
+  ]
 }

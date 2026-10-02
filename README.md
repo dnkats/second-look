@@ -26,8 +26,20 @@ The buttons are on the rows of the list, in the diff's title bar (for the
 change at the cursor), as Accept and Reject links above each change in the
 editor, and on the keys Alt+Y (accept) and Alt+N (reject); Alt+J and Alt+K
 move to the next and previous change. In the ordinary editor the lines still
-to review are highlighted. The diff editor's own revert arrow between the two
-sides rejects too.
+to review are highlighted.
+
+In the diff, VS Code shows its own buttons next to the change under the
+cursor or the mouse: Revert Block, which rejects, and from Second Look Accept
+Block (Accept Selection when lines are selected). VS Code shows Accept Block
+only once you allow it, because it uses an API that is still in preview: run
+**Preferences: Configure Runtime Arguments**, add
+
+```
+"enable-proposed-api": ["dnkats.second-look"]
+```
+
+to the file that opens, and restart VS Code. With Remote-SSH this is the file
+on your own computer, where the VS Code window runs.
 
 Accepted changes are listed under **Accepted**; **Review Again** puts one back
 on the list. **Undo** in the view's title bar takes back the last accept or
@@ -91,7 +103,7 @@ a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
 Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
 
 ```
-code --install-extension second-look-0.1.0.vsix
+code --install-extension second-look-0.1.1.vsix
 ```
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).
@@ -130,6 +142,9 @@ normal.
   committed.
 - In diff editors the Accept and Reject links appear only with the setting
   `diffEditor.codeLens` on; the title bar buttons and keys work regardless.
+- Accept Block uses a proposed VS Code API: it needs the runtime argument
+  above, and an extension using it cannot be published on the Marketplace as
+  it is.
 - Binary files, renames (a deletion plus a new file), submodules and changes of
   the file mode are accepted or rejected as whole files.
 - One person reviews a checkout at a time.

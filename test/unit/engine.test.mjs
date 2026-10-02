@@ -369,3 +369,16 @@ test('on main, pushing unreviewed commits keeps them pending', async () => {
   assert.equal(t.hunks.length, 1);
   assert.deepEqual(t.hunks[0].newLines, ['fifteen\n']);
 });
+
+test('accepting given content (the diff gutter\'s Accept Block) takes one block, and undo puts it back', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  await r.ensure();
+  const t = await r.pendingTexts('a.txt');
+  await r.acceptContent('a.txt', engine.applyHunk(t.oldText, t.hunks[1]));
+  const left = await r.pendingTexts('a.txt');
+  assert.equal(left.hunks.length, 1);
+  assert.deepEqual(left.hunks[0].newLines, ['three\n']);
+  await r.undo();
+  assert.equal((await r.pendingTexts('a.txt')).hunks.length, 2);
+});
