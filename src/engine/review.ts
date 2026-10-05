@@ -363,7 +363,12 @@ export class Review {
   }
 
   /** Files with changes not accepted yet: the checklist against the working tree. */
-  async pending(): Promise<FileChange[]> {
+  pending(): Promise<FileChange[]> {
+    // the refresh writes the checklist's index, so it waits for accepts and rejects
+    return this.exclusive(() => this.pendingUnlocked());
+  }
+
+  private async pendingUnlocked(): Promise<FileChange[]> {
     await this.repo.git.run(['update-index', '-q', '--refresh'], { cwd: this.repo.root, env: this.env, okCodes: [1] });
     const out = await this.repo.zList(['diff', '--name-status', '-z', '--no-renames', '--no-ext-diff', '--ignore-submodules=dirty'], this.env);
     const changes: FileChange[] = [];
@@ -700,7 +705,7 @@ export class Review {
     return this.exclusive(async () => {
       await this.requireState();
       const entries: UndoEntry[] = [];
-      for (const f of await this.pending()) {
+      for (const f of await this.pendingUnlocked()) {
         entries.push(await this.rejectFileUnlocked(f.path));
       }
       if (entries.length > 0) {
@@ -825,7 +830,7 @@ export class Review {
   finish(opts: { commitMessage?: string }): Promise<{ reviewed: string; committed?: string }> {
     return this.exclusive(async () => {
       await this.requireState();
-      if ((await this.pending()).length > 0) {
+      if ((await this.pendingUnlocked()).length > 0) {
         throw new Error('There are still changes to review.');
       }
       let committed: string | undefined;

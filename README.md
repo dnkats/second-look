@@ -139,7 +139,7 @@ a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
 Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
 
 ```
-code --install-extension second-look-0.1.12.vsix
+code --install-extension second-look-0.1.13.vsix
 ```
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).

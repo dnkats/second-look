@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { engine, git, mkrepo, write, read, remove, commitAll, openReview, lines, replaceLine, pendingPaths, acceptedPaths } from './helpers.mjs';
 
@@ -41,6 +41,33 @@ test('rejecting a block given by its lines, as the diff gutter hands it over', a
   assert.equal(read(dir, 'a.txt'), replaceLine(lines(30), 3, 'three\n'));
   assert.equal(await r.undo(), 'reject a change in a.txt');
   assert.equal(read(dir, 'a.txt'), replaceLine(replaceLine(lines(30), 3, 'three\n'), 25, 'twenty-five\n'));
+});
+
+test('refreshing the list and accepting at the same time do not trip over the index lock', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  await r.ensure();
+  for (let i = 0; i < 10; i++) {
+    const [h] = (await r.pendingTexts('a.txt')).hunks;
+    // the list refreshes while a change is accepted and moved back, as file watchers make it do
+    await Promise.all([r.pending(), r.acceptHunk('a.txt', hunkKey(h)), r.pending()]);
+    const s = await r.load();
+    const [back] = (await r.acceptedTexts(s, 'a.txt')).hunks;
+    await Promise.all([r.pending(), r.unacceptHunk('a.txt', hunkKey(back)), r.pending()]);
+  }
+  assert.equal((await r.pendingTexts('a.txt')).hunks.length, 2);
+});
+
+test('an index locked by another git process for a moment: the accept waits and goes through', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  await r.ensure();
+  const [h] = (await r.pendingTexts('a.txt')).hunks;
+  const lock = r.indexFile + '.lock';
+  writeFileSync(lock, '');
+  setTimeout(() => rmSync(lock), 150);
+  await r.acceptHunk('a.txt', hunkKey(h));
+  assert.equal((await r.pendingTexts('a.txt')).hunks.length, 1);
 });
 
 test('accepting, rejecting and moving back single hunks', async () => {

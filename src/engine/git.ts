@@ -24,11 +24,29 @@ export class GitError extends Error {
   }
 }
 
+/** Waits before each new try when another git process holds an index lock, in milliseconds. */
+const LOCK_RETRIES = [50, 100, 200, 400, 800];
+
 /** Runs the git binary. All output is raw bytes; callers decode. */
 export class Git {
   constructor(readonly path = 'git') {}
 
-  run(args: string[], opts: GitRunOptions): Promise<GitResult> {
+  async run(args: string[], opts: GitRunOptions): Promise<GitResult> {
+    for (const wait of LOCK_RETRIES) {
+      try {
+        return await this.runOnce(args, opts);
+      } catch (e) {
+        // git gives up at once on a locked index; the other process is usually done within a moment
+        if (!(e instanceof GitError) || !/index\.lock': File exists/.test(e.stderr)) {
+          throw e;
+        }
+        await new Promise((r) => setTimeout(r, wait));
+      }
+    }
+    return this.runOnce(args, opts);
+  }
+
+  private runOnce(args: string[], opts: GitRunOptions): Promise<GitResult> {
     return new Promise((resolve, reject) => {
       const child = spawn(this.path, args, {
         cwd: opts.cwd,

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.13
+
+Accept no longer fails now and then with "index.lock: File exists": the list's
+refresh, which updates the review's index too, waits for accepts and rejects,
+and a step that finds the index locked by another git process waits for it
+briefly instead of giving up.
+
 ## 0.1.12
 
 Pause Review and Resume Review in the view's menu: paused, Second Look shows
