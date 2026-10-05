@@ -2,7 +2,7 @@
   "name": "second-look",
   "displayName": "Second Look",
   "description": "Review what your coding agent changed, change by change: accept, reject, edit, leave comments for the agent, and finish when you're done.",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "publisher": "dnkats",
   "license": "MIT",
   "repository": {
@@ -63,33 +63,38 @@
     "viewsWelcome": [
       {
         "view": "secondLook.view",
+        "contents": "The review is paused: no highlights, links or counts, and what you accepted is kept.\n[Resume Review](command:secondLook.resume)",
+        "when": "secondLook.paused"
+      },
+      {
+        "view": "secondLook.view",
         "contents": "Open a folder that is a git repository to review the changes in it.",
-        "when": "secondLook.state == noRepo"
+        "when": "secondLook.state == noRepo && !secondLook.paused"
       },
       {
         "view": "secondLook.view",
         "contents": "Looking for changes…",
-        "when": "secondLook.state == loading"
+        "when": "secondLook.state == loading && !secondLook.paused"
       },
       {
         "view": "secondLook.view",
         "contents": "Nothing to review. Changes that you or an agent make in this repository show up here.\n[Review From…](command:secondLook.reviewFrom)",
-        "when": "secondLook.state == clean"
+        "when": "secondLook.state == clean && !secondLook.paused"
       },
       {
         "view": "secondLook.view",
         "contents": "Check out a branch to review the changes on it.",
-        "when": "secondLook.state == detached"
+        "when": "secondLook.state == detached && !secondLook.paused"
       },
       {
         "view": "secondLook.view",
         "contents": "A terminal review (git review) is open in this checkout.\n[Take It Over](command:secondLook.takeOverTerminal)",
-        "when": "secondLook.state == terminal"
+        "when": "secondLook.state == terminal && !secondLook.paused"
       },
       {
         "view": "secondLook.view",
         "contents": "Something went wrong while reading the repository.\n[Refresh](command:secondLook.refresh)",
-        "when": "secondLook.state == error"
+        "when": "secondLook.state == error && !secondLook.paused"
       }
     ],
     "commands": [
@@ -122,6 +127,18 @@
         "title": "Review From…",
         "category": "Second Look",
         "icon": "$(history)"
+      },
+      {
+        "command": "secondLook.pause",
+        "title": "Pause Review",
+        "category": "Second Look",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "secondLook.resume",
+        "title": "Resume Review",
+        "category": "Second Look",
+        "icon": "$(debug-start)"
       },
       {
         "command": "secondLook.acceptAll",
@@ -391,9 +408,22 @@
         {
           "command": "secondLook.rejectBlock",
           "when": "false"
+        },
+        {
+          "command": "secondLook.pause",
+          "when": "!secondLook.paused"
+        },
+        {
+          "command": "secondLook.resume",
+          "when": "secondLook.paused"
         }
       ],
       "view/title": [
+        {
+          "command": "secondLook.resume",
+          "when": "view == secondLook.view && secondLook.paused",
+          "group": "navigation@0"
+        },
         {
           "command": "secondLook.openAll",
           "when": "view == secondLook.view && secondLook.hasPending",
@@ -448,6 +478,11 @@
           "command": "secondLook.showDiffLinks",
           "when": "view == secondLook.view && !config.diffEditor.codeLens",
           "group": "3_show@1"
+        },
+        {
+          "command": "secondLook.pause",
+          "when": "view == secondLook.view && !secondLook.paused",
+          "group": "4_pause@1"
         }
       ],
       "view/item/context": [
@@ -598,19 +633,19 @@
         {
           "command": "secondLook.acceptBlock",
           "group": "primary@5",
-          "when": "diffEditorOriginalUri =~ /^second-look:/"
+          "when": "diffEditorOriginalUri =~ /^second-look:/ && !secondLook.paused"
         },
         {
           "command": "secondLook.rejectBlock",
           "group": "primary@5",
-          "when": "diffEditorOriginalUri =~ /^second-look:/"
+          "when": "diffEditorOriginalUri =~ /^second-look:/ && !secondLook.paused"
         }
       ],
       "diffEditor/gutter/selection": [
         {
           "command": "secondLook.acceptSelection",
           "group": "primary@5",
-          "when": "diffEditorOriginalUri =~ /^second-look:/"
+          "when": "diffEditorOriginalUri =~ /^second-look:/ && !secondLook.paused"
         }
       ]
     },

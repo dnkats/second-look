@@ -215,5 +215,21 @@ exports.run = async function run() {
     assert.equal((await vscode.commands.executeCommand('vscode.executeCodeLensProvider', a)).length, 0);
   });
 
+  await test('pausing hides the review; resuming shows it again with nothing lost', async () => {
+    const doc = await vscode.workspace.openTextDocument(file('long.txt'));
+    await vscode.window.showTextDocument(doc);
+    const links = async () => (await vscode.commands.executeCommand('vscode.executeCodeLensProvider', doc.uri)).length;
+    await until('links before pausing', async () => (await links()) > 0);
+    const before = model.pendingHunkCount;
+    await vscode.commands.executeCommand('secondLook.pause');
+    assert.deepEqual(await api.tree.getChildren(), []);
+    assert.equal(await links(), 0);
+    assert.equal(api.view.message, undefined);
+    await vscode.commands.executeCommand('secondLook.resume');
+    await until('links again', async () => (await links()) > 0);
+    assert.ok((await api.tree.getChildren()).length > 0);
+    assert.equal(model.pendingHunkCount, before);
+  });
+
   done();
 };

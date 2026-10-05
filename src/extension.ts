@@ -19,6 +19,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
     onUnreject: (id) => CommentsUI.forgetRejection(m, id),
   }));
   context.subscriptions.push(manager);
+  manager.paused = context.workspaceState.get<boolean>('paused', false);
 
   const content = new ContentProvider(manager);
   context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(CONTENT_SCHEME, content));
@@ -67,13 +68,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   comments.register(context);
   context.subscriptions.push(comments);
   context.subscriptions.push(vscode.commands.registerCommand('secondLook.installSkill', () => installSkill(context)));
+  const setPaused = async (on: boolean) => {
+    manager.paused = on;
+    await context.workspaceState.update('paused', on);
+    update();
+  };
+  context.subscriptions.push(
+    vscode.commands.registerCommand('secondLook.pause', () => setPaused(true)),
+    vscode.commands.registerCommand('secondLook.resume', () => setPaused(false)),
+  );
 
   const update = () => {
     tree.refresh();
     content.refreshAll();
     lenses.refresh();
     highlights.schedule();
-    const models = manager.models;
+    // paused, the view shows only how to resume
+    const models = manager.paused ? [] : manager.models;
     view.message = models.length === 1 && (models[0].state === 'changes' || models[0].state === 'reviewed') ? header(models[0]) : undefined;
     const hunks = models.reduce((n, m) => n + m.pendingHunkCount, 0);
     view.badge = hunks > 0 ? { value: hunks, tooltip: `${hunks} change${hunks === 1 ? '' : 's'} to review` } : undefined;
@@ -140,17 +151,20 @@ async function setContexts(manager: Manager): Promise<void> {
     state = models[0].state;
   }
   const set = (k: string, v: unknown) => vscode.commands.executeCommand('setContext', k, v);
+  // paused, the buttons, arrows and keys that act on the review are gone
+  const live = !manager.paused;
+  await set('secondLook.paused', manager.paused);
   await set('secondLook.state', state);
-  await set('secondLook.hasPending', models.some((m) => m.pending.length > 0));
-  await set('secondLook.hasReview', models.some((m) => m.pending.length > 0 || m.accepted.length > 0));
-  await set('secondLook.canUndo', models.some((m) => m.undoLabel !== undefined));
+  await set('secondLook.hasPending', live && models.some((m) => m.pending.length > 0));
+  await set('secondLook.hasReview', live && models.some((m) => m.pending.length > 0 || m.accepted.length > 0));
+  await set('secondLook.canUndo', live && models.some((m) => m.undoLabel !== undefined));
   const ed = vscode.window.activeTextEditor;
   const m = ed ? manager.modelFor(ed.document.uri) : undefined;
   const rel = m && ed ? m.repo.rel(ed.document.uri.fsPath) : undefined;
-  await set('secondLook.activeFileHasPending', !!(m && rel && m.pendingFile(rel)));
+  await set('secondLook.activeFileHasPending', live && !!(m && rel && m.pendingFile(rel)));
   const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
   const reviewDiff = tab?.input instanceof vscode.TabInputTextDiff && tab.input.original.scheme === CONTENT_SCHEME;
-  await set('secondLook.activeIsReviewDiff', reviewDiff);
+  await set('secondLook.activeIsReviewDiff', live && reviewDiff);
 }
 
 async function offerSkill(context: vscode.ExtensionContext): Promise<void> {

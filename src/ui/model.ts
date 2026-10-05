@@ -239,6 +239,8 @@ async function mapLimit<T>(items: T[], limit: number, fn: (t: T) => Promise<void
 /** All checkouts in the workspace. */
 export class Manager implements vscode.Disposable {
   models: RepoModel[] = [];
+  /** Review paused in this window: the review is kept, but nothing of it shows. */
+  paused = false;
   git: Git;
   version: [number, number] = [0, 0];
   private readonly emitter = new vscode.EventEmitter<void>();

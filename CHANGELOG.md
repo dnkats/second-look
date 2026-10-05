@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.12
+
+Pause Review and Resume Review in the view's menu: paused, Second Look shows
+nothing in that window (no highlights, links, keys, arrows, counts or list)
+and keeps the review as it was. The pause holds across restarts.
+
 ## 0.1.11
 
 An Open File button on each row of the list opens the change in the file

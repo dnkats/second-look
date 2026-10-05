@@ -89,6 +89,9 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
 
   async getChildren(n?: Node): Promise<Node[]> {
     if (!n) {
+      if (this.manager.paused) {
+        return [];
+      }
       const models = this.manager.models;
       if (models.length === 1) {
         return this.repoChildren(models[0]);

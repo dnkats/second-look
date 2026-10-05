@@ -64,6 +64,11 @@ editor keeps its links. Over Remote-SSH, VS Code does not tell the extension
 that it allows the API, so the links go only after your first click on Accept
 Block or Reject Block, and again after each VS Code update.
 
+**Pause Review** in the view's `...` menu switches all this off in the window,
+for when you open a checkout and do not want to review now: no highlights,
+links, keys, arrows or counts, and the list is empty. **Resume Review** brings
+it back as it was. Comments stay visible either way.
+
 Accepted changes are listed under **Accepted**; **Review Again** puts one back
 on the list. **Undo** in the view's title bar takes back the last accept or
 reject, several steps deep, also after a restart.
@@ -134,7 +139,7 @@ a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
 Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
 
 ```
-code --install-extension second-look-0.1.11.vsix
+code --install-extension second-look-0.1.12.vsix
 ```
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).

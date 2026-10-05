@@ -44,7 +44,7 @@ export class ReviewLenses implements vscode.CodeLensProvider {
   }
 
   async provideCodeLenses(doc: vscode.TextDocument): Promise<vscode.CodeLens[]> {
-    if (!vscode.workspace.getConfiguration('secondLook').get<boolean>('codeLens', true)) {
+    if (this.manager.paused || !vscode.workspace.getConfiguration('secondLook').get<boolean>('codeLens', true)) {
       return [];
     }
     const m = this.manager.modelFor(doc.uri);
