@@ -10,9 +10,11 @@ showed "Open a folder that is a git repository". Refresh looks for new
 repositories as well.
 
 With more than one repository, a Repositories view above the review lists
-them, as in Source Control. The review view, now called Changes, stays empty
-until one is chosen there, then shows that one; the commands that act on a
-whole review act on it, and choosing another switches to that one.
+them, as in Source Control, and the review view, now called Changes, shows
+the one chosen there. Until you choose, it shows the repository of the active
+editor or one with something to review; each window remembers your choice.
+The commands that act on a whole review act on the repository shown.
+(Contributed by @zhaivanczha.)
 
 ## 0.2.1
 

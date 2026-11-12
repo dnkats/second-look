@@ -20,12 +20,13 @@ With more than one repository, a **Repositories** view above Changes lists
 them all, as in Source Control, each with its branch and what there is to
 review. These are the repositories of the workspace folders and the ones
 that VS Code's Source Control finds inside them: by default one folder level
-down, deeper with the `git.repositoryScanMaxDepth` setting. Changes stays
-empty until you choose one there; it then shows only that repository, as if
-it were the only one, and the buttons and commands that act on a whole
-review (Start Review, Finish, Undo, Accept All, …) act on it too. Choosing
-another switches to that one. The badge and the status bar keep counting the
-changes in every repository.
+down, deeper with the `git.repositoryScanMaxDepth` setting. Changes shows
+one repository at a time, as if it were the only one: the one you choose
+there, which the window remembers, and until then the repository of the
+active editor, or one with something to review. The buttons and commands
+that act on a whole review (Start Review, Finish, Undo, Accept All, …) act on
+the repository shown. The badge and the status bar keep counting the changes
+in every repository.
 
 Click a file or a change to open it in a diff: on the left the text you have
 accepted so far, on the right the file as it is now. For every change you can
