@@ -116,6 +116,48 @@ async function exists(file: string): Promise<boolean> {
 const MAX_UNDO = 100;
 
 /**
+ * Removes what was kept for branches that no longer exist: their review files
+ * in this checkout and their refs/second-look and refs/reviewed. `current` is
+ * the branch checked out here, kept even before its first commit. Returns the
+ * branches swept.
+ */
+export async function sweepGoneBranches(repo: Repo, current: string): Promise<string[]> {
+  const refs = (await repo.text(['for-each-ref', '--format=%(refname)', 'refs/heads', 'refs/second-look', 'refs/reviewed'])).split('\n').filter((l) => l);
+  const branches = new Set(refs.filter((r) => r.startsWith('refs/heads/')).map((r) => r.slice('refs/heads/'.length)));
+  branches.add(current);
+  const gone = new Set<string>();
+  const drop: string[] = [];
+  for (const r of refs) {
+    const m = /^refs\/(?:second-look|reviewed)\/(.+)$/.exec(r);
+    if (m && !branches.has(m[1])) {
+      drop.push(r);
+      gone.add(m[1]);
+    }
+  }
+  if (drop.length > 0) {
+    await repo.run(['update-ref', '--stdin'], undefined, drop.map((r) => `delete ${r}\n`).join(''));
+  }
+  const dir = path.join(repo.gitDir, 'second-look');
+  for (const f of await fs.readdir(dir).catch(() => [] as string[])) {
+    const m = /^(.+?)(\.undo\.json|\.json|\.index)$/.exec(f);
+    if (!m || f === 'comments.json') {
+      continue;
+    }
+    let branch: string;
+    try {
+      branch = decodeURIComponent(m[1]);
+    } catch {
+      continue;
+    }
+    if (!branches.has(branch)) {
+      await fs.rm(path.join(dir, f), { force: true });
+      gone.add(branch);
+    }
+  }
+  return [...gone].sort();
+}
+
+/**
  * The review of one branch in one checkout. Its checklist is a private index
  * file: the content accepted so far. Pending changes are that index against
  * the working tree; accepted changes are the base against that index. Git's

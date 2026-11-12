@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { engine, git, mkrepo, write, read, remove, commitAll, openReview, lines, replaceLine, pendingPaths, acceptedPaths } from './helpers.mjs';
 
@@ -488,4 +489,28 @@ test('an undo step whose content git gc already took is refused with a message; 
   await r.acceptFile('b.txt');
   assert.equal(await r.undo(), 'accept b.txt');
   await assert.rejects(r.undo(), (e) => e instanceof engine.UndoConflictError && /git gc removed/.test(e.message));
+});
+
+test('state and refs of deleted branches are swept; the branch checked out, even unborn, is kept', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  await r.ensure();
+  await r.acceptFile('b.txt');
+  git(dir, 'checkout', '-q', 'main');
+  const onMain = await openReview(dir);
+  await onMain.ensure();
+  await onMain.markStarted();
+  git(dir, 'update-ref', 'refs/reviewed/feature', 'HEAD');
+  git(dir, 'branch', '-q', '-D', 'feature');
+  assert.deepEqual(await engine.sweepGoneBranches(onMain.repo, 'main'), ['feature']);
+  assert.equal(git(dir, 'for-each-ref', '--format=%(refname)', 'refs/second-look', 'refs/reviewed'), 'refs/second-look/main');
+  assert.deepEqual(readdirSync(onMain.dir).sort(), ['main.index', 'main.json', 'started']);
+  assert.deepEqual(await engine.sweepGoneBranches(onMain.repo, 'main'), []);
+
+  const fresh = mkdtempSync(path.join(tmpdir(), 'grv-'));
+  git(fresh, 'init', '-q', '-b', 'main');
+  const unborn = await openReview(fresh);
+  await unborn.ensure();
+  assert.deepEqual(await engine.sweepGoneBranches(unborn.repo, 'main'), []);
+  assert.equal(existsSync(unborn.stateFile), true);
 });

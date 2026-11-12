@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { ChangeStatus, FileTexts, Git, Hunk, IndexEntry, Repo, Review, ReviewHooks, ReviewState, gitVersion } from '../engine';
+import { ChangeStatus, FileTexts, Git, Hunk, IndexEntry, Repo, Review, ReviewHooks, ReviewState, gitVersion, sweepGoneBranches } from '../engine';
 import { CommentStore } from '../comments/store';
 import { EditorIO } from './editorIO';
 
@@ -123,9 +123,11 @@ export class RepoModel implements vscode.Disposable {
       this.accepted = [];
       return;
     }
+    let switched = false;
     if (this.review?.branch !== branch) {
       this.review = new Review(this.repo, branch, new EditorIO(this.repo.root), this.makeHooks(this));
       this.cache.clear();
+      switched = true;
     }
     this.branch = branch;
     const review = this.review;
@@ -137,6 +139,10 @@ export class RepoModel implements vscode.Disposable {
       this.pending = [];
       this.accepted = [];
       return;
+    }
+    if (switched) {
+      // housekeeping only; a failure here must not hide the review
+      await sweepGoneBranches(this.repo, branch).catch(() => undefined);
     }
     const terminal = await review.terminalReview();
     if (terminal) {
