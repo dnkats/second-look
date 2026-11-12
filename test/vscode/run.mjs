@@ -1,6 +1,7 @@
 // Runs the integration suites in a real VS Code: the local install, a
 // throwaway profile, and a scratch repository where an "agent" made changes.
-// The second suite runs with Second Look's proposed API allowed.
+// The second suite runs with Second Look's proposed API allowed; the third
+// opens a folder with two such repositories in it.
 import { runTests } from '@vscode/test-electron';
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
@@ -13,7 +14,7 @@ const tmp = mkdtempSync(path.join(tmpdir(), 'grv-vscode-'));
 /** A repository where an agent changed a.txt, added b.txt and deleted c.txt on a side branch. */
 function scratchRepo(name) {
   const repo = path.join(tmp, name);
-  mkdirSync(repo);
+  mkdirSync(repo, { recursive: true });
   const git = (...a) => execFileSync('git', a, { cwd: repo, encoding: 'utf8' });
   const lines = (n) => Array.from({ length: n }, (_, i) => `line ${i + 1}\n`).join('');
   git('init', '-q', '-b', 'main');
@@ -35,6 +36,13 @@ function scratchRepo(name) {
   return repo;
 }
 
+/** A folder that is not a repository, with two scratch repositories in it. */
+function scratchParent(name) {
+  scratchRepo(path.join(name, 'one'));
+  scratchRepo(path.join(name, 'two'));
+  return path.join(tmp, name);
+}
+
 let xvfb;
 // a private X server, unless asked to use the current display
 if (!process.env.GRV_USE_DISPLAY && existsSync('/usr/bin/Xvfb')) {
@@ -43,8 +51,7 @@ if (!process.env.GRV_USE_DISPLAY && existsSync('/usr/bin/Xvfb')) {
   await new Promise((r) => setTimeout(r, 800));
 }
 
-async function run(suite, name, args = []) {
-  const repo = scratchRepo(name);
+async function run(suite, name, args = [], repo = scratchRepo(name)) {
   process.env.GRV_TEST_REPO = repo;
   process.env.GRV_ROOT = root;
   await runTests({
@@ -60,6 +67,7 @@ let code = 0;
 try {
   await run('suite.cjs', 'repo');
   await run('suite-proposed.cjs', 'repo-proposed', ['--enable-proposed-api', 'dnkats.second-look']);
+  await run('suite-subfolders.cjs', 'subfolders', [], scratchParent('subfolders'));
 } catch (e) {
   console.error(e);
   code = 1;

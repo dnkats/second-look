@@ -16,7 +16,10 @@ The view then lists the changes still to review, file by file, with every
 change inside a file listed under it. The line at the top says what the list
 covers, for example "Changes on damping since it left main". In a workspace
 with several repositories, each one gets its own part of the list, and Start
-Review in the view's `...` menu starts the others.
+Review in the view's `...` menu starts the others. These are the
+repositories of the workspace folders and the ones that VS Code's Source
+Control finds inside them: by default one folder level down, deeper with the
+`git.repositoryScanMaxDepth` setting.
 
 Click a file or a change to open it in a diff: on the left the text you have
 accepted so far, on the right the file as it is now. For every change you can

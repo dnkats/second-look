@@ -74,7 +74,7 @@
       },
       {
         "view": "secondLook.view",
-        "contents": "Open a folder that is a git repository to review the changes in it.",
+        "contents": "Open a folder that is a git repository, or that has git repositories in its subfolders, to review the changes in them.",
         "when": "secondLook.state == noRepo && !secondLook.paused"
       },
       {

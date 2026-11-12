@@ -252,6 +252,19 @@ async function mapLimit<T>(items: T[], limit: number, fn: (t: T) => Promise<void
   await Promise.all(workers);
 }
 
+/** The part of the API of VS Code's Git extension (vscode.git, version 1) that Second Look uses. */
+interface GitExtension {
+  readonly enabled: boolean;
+  readonly onDidChangeEnablement: vscode.Event<boolean>;
+  getAPI(version: 1): GitAPI;
+}
+
+interface GitAPI {
+  readonly repositories: readonly { readonly rootUri: vscode.Uri }[];
+  readonly onDidOpenRepository: vscode.Event<unknown>;
+  readonly onDidCloseRepository: vscode.Event<unknown>;
+}
+
 /** All checkouts in the workspace. */
 export class Manager implements vscode.Disposable {
   models: RepoModel[] = [];
@@ -262,6 +275,11 @@ export class Manager implements vscode.Disposable {
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.emitter.event;
   private readonly disposables: vscode.Disposable[] = [this.emitter];
+  /** The Git extension's API while it is on; undefined without it. */
+  private gitApi?: GitAPI;
+  private gitApiListeners: vscode.Disposable[] = [];
+  private discovering?: Promise<void>;
+  private nextDiscovery?: Promise<void>;
 
   constructor(private readonly makeHooks: (m: RepoModel) => ReviewHooks) {
     const gitPath = vscode.workspace.getConfiguration('git').get<string | string[]>('path');
@@ -274,37 +292,104 @@ export class Manager implements vscode.Disposable {
         }
       }),
     );
+    void this.followGitExtension();
   }
 
-  async discover(): Promise<void> {
+  /**
+   * Takes in the repositories that VS Code's Git extension finds in the workspace folders, as Source Control
+   * shows them: those in subfolders too, and those cloned or created after the window opened. `git rev-parse`
+   * finds only the repository a folder is in, never one below it. With the Git extension off (git.enabled),
+   * only the workspace folders' own repositories are reviewed.
+   */
+  private async followGitExtension(): Promise<void> {
+    const git = await vscode.extensions.getExtension<GitExtension>('vscode.git')?.activate().then(
+      (g) => g,
+      () => undefined,
+    );
+    if (!git) {
+      return;
+    }
+    const connect = (enabled: boolean) => {
+      this.gitApiListeners.forEach((d) => d.dispose());
+      this.gitApiListeners = [];
+      this.gitApi = undefined;
+      if (enabled) {
+        try {
+          this.gitApi = git.getAPI(1);
+        } catch {
+          // getAPI throws while the extension has no git to run
+          this.gitApi = undefined;
+        }
+      }
+      if (this.gitApi) {
+        this.gitApiListeners.push(
+          this.gitApi.onDidOpenRepository(() => void this.discover()),
+          this.gitApi.onDidCloseRepository(() => void this.discover()),
+        );
+      }
+      void this.discover();
+    };
+    this.disposables.push(git.onDidChangeEnablement(connect));
+    connect(git.enabled);
+  }
+
+  /**
+   * Finds the checkouts in the workspace again. A request while one search runs is served by one more search
+   * right after it: the Git extension reports the repositories it opens one by one, and two searches at once
+   * would both make a model for a new one.
+   */
+  discover(): Promise<void> {
+    if (this.discovering) {
+      this.nextDiscovery ??= this.discovering
+        .catch(() => undefined)
+        .then(() => {
+          this.nextDiscovery = undefined;
+          return this.discover();
+        });
+      return this.nextDiscovery;
+    }
+    this.discovering = this.findCheckouts().finally(() => {
+      this.discovering = undefined;
+    });
+    return this.discovering;
+  }
+
+  private async findCheckouts(): Promise<void> {
+    const folders = (vscode.workspace.workspaceFolders ?? []).filter((f) => f.uri.scheme === 'file').map((f) => f.uri.fsPath);
+    // the Git extension also opens the repositories of files opened from outside the workspace; those are left out
+    const inside = (this.gitApi?.repositories ?? [])
+      .map((r) => r.rootUri)
+      .filter((u) => u.scheme === 'file' && vscode.workspace.getWorkspaceFolder(u) !== undefined)
+      .map((u) => u.fsPath)
+      .sort();
+    // every root comes from rev-parse, so the same repository found both ways has the same root, also on Windows
+    const repos = await Promise.all(
+      [...folders, ...inside].map((dir) => Repo.open(this.git, dir).catch(() => undefined)),
+    );
     const found: RepoModel[] = [];
-    for (const f of vscode.workspace.workspaceFolders ?? []) {
-      if (f.uri.scheme !== 'file') {
+    const added: RepoModel[] = [];
+    for (const repo of repos) {
+      if (!repo || found.some((m) => m.repo.root === repo.root)) {
         continue;
       }
-      let repo: Repo | undefined;
-      try {
-        repo = await Repo.open(this.git, f.uri.fsPath);
-      } catch {
-        repo = undefined;
+      let m = this.models.find((x) => x.repo.root === repo.root);
+      if (!m) {
+        m = this.track(new RepoModel(repo, this.makeHooks));
+        added.push(m);
       }
-      if (!repo || found.some((m) => m.repo.root === repo!.root)) {
-        continue;
-      }
-      const existing = this.models.find((m) => m.repo.root === repo!.root);
-      found.push(existing ?? this.track(new RepoModel(repo, this.makeHooks)));
+      found.push(m);
     }
-    for (const m of this.models) {
-      if (!found.includes(m)) {
-        m.dispose();
-      }
-    }
+    const removed = this.models.filter((m) => !found.includes(m));
+    removed.forEach((m) => m.dispose());
     this.models = found;
     if (found.length > 0 && this.version[0] === 0) {
       this.version = await gitVersion(this.git, found[0].repo.root);
     }
-    await Promise.all(found.map((m) => m.refresh()));
-    this.emitter.fire();
+    // the models already here keep themselves up to date
+    await Promise.all(added.map((m) => m.refresh()));
+    if (added.length > 0 || removed.length > 0) {
+      this.emitter.fire();
+    }
   }
 
   private track(m: RepoModel): RepoModel {
@@ -331,6 +416,7 @@ export class Manager implements vscode.Disposable {
 
   dispose(): void {
     this.models.forEach((m) => m.dispose());
+    this.gitApiListeners.forEach((d) => d.dispose());
     this.disposables.forEach((d) => d.dispose());
   }
 }

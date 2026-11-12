@@ -50,7 +50,10 @@ export class Commands {
   register(context: vscode.ExtensionContext): void {
     const cmd = (id: string, fn: (...args: never[]) => Promise<unknown> | unknown) =>
       context.subscriptions.push(vscode.commands.registerCommand(id, (...args: never[]) => this.guard(() => fn(...args))));
-    cmd('secondLook.refresh', () => Promise.all(this.manager.models.map((m) => m.refresh())));
+    cmd('secondLook.refresh', async () => {
+      await this.manager.discover();
+      await Promise.all(this.manager.models.map((m) => m.refresh()));
+    });
     cmd('secondLook.openChange', (a: Arg) => this.openChange(a));
     cmd('secondLook.openInEditor', (a: Arg) => this.openChange(a, 'editor'));
     cmd('secondLook.openInDiff', (a: Arg) => this.openChange(a, 'diff'));

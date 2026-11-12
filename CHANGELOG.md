@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+Repositories in subfolders of the opened folder are reviewed too: the ones
+that VS Code's Source Control finds there, including ones cloned or created
+after the window opened. Before, Second Look looked only at the repository
+the opened folder itself is in, and a folder holding several repositories
+showed "Open a folder that is a git repository". Refresh looks for new
+repositories as well. With more than three repositories and nothing to review
+in any of them, the view lists them all instead of staying empty.
+
 ## 0.2.1
 
 A logo, and a shorter README: getting started, the gutter buttons and the

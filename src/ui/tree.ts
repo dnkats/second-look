@@ -96,7 +96,9 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
       if (models.length === 1) {
         return this.repoChildren(models[0]);
       }
-      return models.filter((m) => (m.state !== 'clean' && m.state !== 'off') || models.length <= 3).map((model) => ({ kind: 'repo', model }));
+      // with many repositories, those with nothing to do are left out, unless that would leave the list empty
+      const busy = models.filter((m) => (m.state !== 'clean' && m.state !== 'off') || models.length <= 3);
+      return (busy.length > 0 ? busy : models).map((model) => ({ kind: 'repo', model }));
     }
     switch (n.kind) {
       case 'repo':
