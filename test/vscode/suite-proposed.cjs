@@ -12,7 +12,9 @@ const repo = process.env.GRV_TEST_REPO;
 exports.run = async function run() {
   const { test, done } = suite();
   const api = await vscode.extensions.getExtension('dnkats.second-look').activate();
-  await until('the repository model', () => api.manager.models.find((m) => m.state === 'changes'));
+  await until('the repository model', () => api.manager.models.find((m) => m.state === 'off'));
+  await vscode.commands.executeCommand('secondLook.start');
+  await until('the review', () => api.manager.models.find((m) => m.state === 'changes'));
   const a = vscode.Uri.file(path.join(repo, 'a.txt'));
   const lenses = async () => (await vscode.commands.executeCommand('vscode.executeCodeLensProvider', a)) ?? [];
 

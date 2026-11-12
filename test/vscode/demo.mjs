@@ -126,7 +126,7 @@ process.env.DISPLAY = display;
 // the suite announces each scene with <tmp>/scene-N.ready and waits for .done
 let stop = false;
 const shots = (async () => {
-  for (let n = 1; !stop; ) {
+  for (let n = 0; !stop; ) {
     if (existsSync(path.join(tmp, `scene-${n}.ready`))) {
       await new Promise((r) => setTimeout(r, 1500));
       execFileSync('import', ['-display', display, '-window', 'root', path.join(out, `scene-${n}.png`)]);

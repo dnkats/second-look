@@ -15,8 +15,25 @@ exports.run = async function run() {
   const { test, done } = suite();
   const ext = vscode.extensions.getExtension('dnkats.second-look');
   const api = await ext.activate();
-  const model = await until('the repository model', () => api.manager.models.find((m) => m.state === 'changes'));
   const file = (rel) => vscode.Uri.file(path.join(repo, rel));
+  const store = path.join(repo, '.git', 'second-look');
+
+  await test('a repository never reviewed shows nothing until Start Review, and nothing is written', async () => {
+    const m = await until('the repository model', () => api.manager.models.find((x) => x.state === 'off'));
+    assert.deepEqual(await api.tree.getChildren(), []);
+    assert.equal(api.view.badge, undefined);
+    const doc = await vscode.workspace.openTextDocument(file('a.txt'));
+    await vscode.window.showTextDocument(doc);
+    assert.deepEqual(await vscode.commands.executeCommand('vscode.executeCodeLensProvider', doc.uri), []);
+    assert.equal(fs.existsSync(store), false);
+    assert.equal(execFileSync('git', ['for-each-ref', 'refs/second-look'], { cwd: repo, encoding: 'utf8' }), '');
+    await vscode.commands.executeCommand('secondLook.start');
+    await until('the review', () => m.state === 'changes');
+    assert.equal(fs.existsSync(path.join(store, 'started')), true);
+    assert.equal(api.view.badge?.value, m.pendingHunkCount);
+  });
+
+  const model = await until('the repository model', () => api.manager.models.find((m) => m.state === 'changes'));
 
   await test('without the proposed API, the extension assumes no Accept Block', async () => {
     assert.equal(api.lenses.gutterButtons, false);

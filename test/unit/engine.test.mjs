@@ -30,6 +30,42 @@ test('a side branch is reviewed from where it left main', async () => {
   assert.equal(git(dir, 'status', '--porcelain'), '');
 });
 
+test('a checkout is not reviewed until started: nothing written, comments do not count; old reviews count', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  const store = path.join(dir, '.git', 'second-look');
+  assert.equal(await r.started(), false);
+  assert.equal(existsSync(store), false);
+  write(dir, '.git/second-look/comments.json', '{"version":1,"threads":[]}\n');
+  assert.equal(await r.started(), false);
+  await r.markStarted();
+  assert.equal(await r.started(), true);
+  // a review started some other way marks the checkout too
+  const other = await openReview(agentBranch());
+  await other.start(await other.autoBase());
+  assert.equal(existsSync(other.startedFile), true);
+  // reviewed before the marker existed: a branch's state file is there
+  rmSync(other.startedFile);
+  assert.equal(await other.started(), true);
+});
+
+test('a worktree of a repository reviewed elsewhere counts as started, also from before the marker', async () => {
+  const dir = agentBranch();
+  const wt = `${dir}-wt`;
+  git(dir, 'worktree', 'add', '-q', '-b', 'other', wt);
+  const r = await openReview(dir);
+  const w = await openReview(wt);
+  assert.equal(await w.started(), false);
+  await r.start(await r.autoBase());
+  assert.equal(await w.started(), true);
+  rmSync(r.startedFile);
+  assert.equal(await w.started(), true);
+  // the worktree's own review keeps its files apart from the main checkout's
+  await w.ensure();
+  assert.notEqual(w.dir, r.dir);
+  assert.equal(existsSync(w.stateFile), true);
+});
+
 test('rejecting a block given by its lines, as the diff gutter hands it over', async () => {
   const dir = agentBranch();
   const r = await openReview(dir);

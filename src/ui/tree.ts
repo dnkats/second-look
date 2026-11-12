@@ -96,7 +96,7 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
       if (models.length === 1) {
         return this.repoChildren(models[0]);
       }
-      return models.filter((m) => m.state !== 'clean' || models.length <= 3).map((model) => ({ kind: 'repo', model }));
+      return models.filter((m) => (m.state !== 'clean' && m.state !== 'off') || models.length <= 3).map((model) => ({ kind: 'repo', model }));
     }
     switch (n.kind) {
       case 'repo':
@@ -129,6 +129,9 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
     const out: Node[] = [];
     if (m.state === 'terminal' && !single) {
       out.push({ kind: 'message', model: m, label: 'A terminal review (git review) is open here — take it over', icon: 'terminal', command: { command: 'secondLook.takeOverTerminal', title: 'Take Over', arguments: [m.repo.root] } });
+    }
+    if (m.state === 'off' && !single) {
+      out.push({ kind: 'message', model: m, label: 'Start Review', icon: 'play', command: { command: 'secondLook.start', title: 'Start Review', arguments: [m.repo.root] } });
     }
     if (m.state === 'error') {
       out.push({ kind: 'message', model: m, label: m.error ?? 'Something went wrong', icon: 'error' });
@@ -260,6 +263,8 @@ export function repoDescription(m: RepoModel): string {
       return `${describeBase(m)} · ${m.pendingHunkCount} to review`;
     case 'reviewed':
       return 'Everything reviewed. Finish to record it.';
+    case 'off':
+      return 'Not reviewed with Second Look yet';
     case 'clean':
       return 'Nothing to review';
     case 'detached':

@@ -30,9 +30,14 @@ async function scene(n) {
 
 exports.run = async function run() {
   const api = await vscode.extensions.getExtension('dnkats.second-look').activate();
-  const model = await until(() => api.manager.models.find((m) => m.state === 'changes'));
   const file = (rel) => vscode.Uri.file(path.join(repo, rel));
+  // a repository opened for the first time: only the Start Review button
+  await until(() => api.manager.models.find((m) => m.state === 'off'));
   await vscode.commands.executeCommand('secondLook.view.focus');
+  await sleep(1000);
+  await scene(0);
+  await vscode.commands.executeCommand('secondLook.start');
+  const model = await until(() => api.manager.models.find((m) => m.state === 'changes'));
   const solver = model.pendingFile('src/solver.jl');
   const nodes = await api.tree.getChildren((await api.tree.getChildren())[0]);
   const solverNode = nodes.find((n) => n.file.path === 'src/solver.jl');

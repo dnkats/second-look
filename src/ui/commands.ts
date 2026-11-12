@@ -71,6 +71,7 @@ export class Commands {
     cmd('secondLook.reviewThisFile', (a: Arg) => this.reviewThisFile(a));
     cmd('secondLook.undo', (a: Arg) => this.undo(a));
     cmd('secondLook.finish', (a: Arg) => this.finish(a));
+    cmd('secondLook.start', (a: Arg) => this.start(a));
     cmd('secondLook.reviewFrom', (a: Arg) => this.reviewFrom(a));
     cmd('secondLook.takeOverTerminal', (a: Arg) => this.takeOver(a));
     cmd('secondLook.showDiffLinks', () => this.setDiffLinks(true));
@@ -545,6 +546,16 @@ export class Commands {
     const r = await m.review.finish({ commitMessage });
     await this.refreshAfter(m);
     void vscode.window.showInformationMessage(r.committed ? `Review finished; your edits are committed as ${r.committed.slice(0, 7)}.` : 'Review finished.');
+  }
+
+  /** Reviews in a checkout where none was started yet, from the automatic base. */
+  private async start(a: Arg): Promise<void> {
+    const m = await this.pickModel(a, (x) => x.state === 'off');
+    if (!m?.review || m.state !== 'off') {
+      return;
+    }
+    await m.review.markStarted();
+    await this.refreshAfter(m);
   }
 
   private async reviewFrom(a: Arg): Promise<void> {

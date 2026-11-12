@@ -155,6 +155,7 @@ async function setContexts(manager: Manager): Promise<void> {
   const live = !manager.paused;
   await set('secondLook.paused', manager.paused);
   await set('secondLook.state', state);
+  await set('secondLook.canStart', models.some((m) => m.state === 'off'));
   await set('secondLook.hasPending', live && models.some((m) => m.pending.length > 0));
   await set('secondLook.hasReview', live && models.some((m) => m.pending.length > 0 || m.accepted.length > 0));
   await set('secondLook.canUndo', live && models.some((m) => m.undoLabel !== undefined));

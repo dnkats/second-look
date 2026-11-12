@@ -78,6 +78,11 @@
       },
       {
         "view": "secondLook.view",
+        "contents": "Review what you or an agent changed in this repository, change by change: accept, reject, leave comments. Nothing shows, and Second Look writes nothing into .git, until you start.\n[Start Review](command:secondLook.start)\nStart Review shows the changes on this branch since it left main; on main, the commits not pushed yet and what is not committed. To start somewhere else: [Review From…](command:secondLook.reviewFrom)",
+        "when": "secondLook.state == off && !secondLook.paused"
+      },
+      {
+        "view": "secondLook.view",
         "contents": "Nothing to review. Changes that you or an agent make in this repository show up here.\n[Review From…](command:secondLook.reviewFrom)",
         "when": "secondLook.state == clean && !secondLook.paused"
       },
@@ -121,6 +126,12 @@
         "title": "Undo Last Accept or Reject",
         "category": "Second Look",
         "icon": "$(discard)"
+      },
+      {
+        "command": "secondLook.start",
+        "title": "Start Review",
+        "category": "Second Look",
+        "icon": "$(play)"
       },
       {
         "command": "secondLook.reviewFrom",
@@ -410,6 +421,10 @@
           "when": "false"
         },
         {
+          "command": "secondLook.start",
+          "when": "secondLook.canStart"
+        },
+        {
           "command": "secondLook.pause",
           "when": "!secondLook.paused"
         },
@@ -443,6 +458,11 @@
           "command": "secondLook.refresh",
           "when": "view == secondLook.view",
           "group": "navigation@4"
+        },
+        {
+          "command": "secondLook.start",
+          "when": "view == secondLook.view && secondLook.canStart",
+          "group": "1_review@0"
         },
         {
           "command": "secondLook.reviewFrom",
@@ -481,7 +501,7 @@
         },
         {
           "command": "secondLook.pause",
-          "when": "view == secondLook.view && !secondLook.paused",
+          "when": "view == secondLook.view && !secondLook.paused && secondLook.state != off",
           "group": "4_pause@1"
         }
       ],

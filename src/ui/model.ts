@@ -5,7 +5,8 @@ import { ChangeStatus, FileTexts, Git, Hunk, IndexEntry, Repo, Review, ReviewHoo
 import { CommentStore } from '../comments/store';
 import { EditorIO } from './editorIO';
 
-export type ModelState = 'loading' | 'changes' | 'reviewed' | 'clean' | 'detached' | 'terminal' | 'error';
+/** 'off': no review was started in this checkout yet, so nothing shows until Start Review. */
+export type ModelState = 'loading' | 'off' | 'changes' | 'reviewed' | 'clean' | 'detached' | 'terminal' | 'error';
 
 export interface FileItem {
   path: string;
@@ -128,6 +129,15 @@ export class RepoModel implements vscode.Disposable {
     }
     this.branch = branch;
     const review = this.review;
+    if (!(await review.started())) {
+      this.state = 'off';
+      this.terminal = undefined;
+      this.reviewState = undefined;
+      this.undoLabel = undefined;
+      this.pending = [];
+      this.accepted = [];
+      return;
+    }
     const terminal = await review.terminalReview();
     if (terminal) {
       this.terminal = terminal;

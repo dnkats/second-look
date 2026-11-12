@@ -112,6 +112,7 @@ export class Review {
   readonly stateFile: string;
   readonly indexFile: string;
   readonly undoFile: string;
+  readonly startedFile: string;
   readonly checklistRef: string;
   readonly reviewedRef: string;
   private readonly env: Record<string, string>;
@@ -129,6 +130,8 @@ export class Review {
     this.stateFile = path.join(this.dir, `${key}.json`);
     this.indexFile = path.join(this.dir, `${key}.index`);
     this.undoFile = path.join(this.dir, `${key}.undo.json`);
+    // one marker for all worktrees: new ones of a reviewed repository need no start
+    this.startedFile = path.join(repo.commonDir, 'second-look', 'started');
     this.checklistRef = `refs/second-look/${branch}`;
     this.reviewedRef = `refs/reviewed/${branch}`;
     this.env = { GIT_INDEX_FILE: this.indexFile };
@@ -148,8 +151,36 @@ export class Review {
     }
   }
 
+  /**
+   * Whether reviews were started in this repository, in any of its worktrees
+   * and on any branch. Until then nothing is reviewed and nothing is written;
+   * comments alone do not count.
+   */
+  async started(): Promise<boolean> {
+    if (await exists(this.startedFile)) {
+      return true;
+    }
+    // reviewed before the marker existed: a branch's state file, here or in the main checkout
+    for (const dir of new Set([this.dir, path.dirname(this.startedFile)])) {
+      const files = await fs.readdir(dir).catch(() => [] as string[]);
+      if (files.some((f) => f.endsWith('.json') && f !== 'comments.json' && !f.endsWith('.undo.json'))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Reviews in this repository from now on: ensure() starts one with the automatic base. */
+  async markStarted(): Promise<void> {
+    if (await exists(this.startedFile)) {
+      return;
+    }
+    await fs.mkdir(path.dirname(this.startedFile), { recursive: true });
+    await fs.writeFile(this.startedFile, `${new Date().toISOString()}\n`);
+  }
+
   private async saveState(state: ReviewState): Promise<void> {
-    await fs.mkdir(this.dir, { recursive: true });
+    await this.markStarted();
     const tmp = `${this.stateFile}.${process.pid}.tmp`;
     await fs.writeFile(tmp, JSON.stringify(state, null, 2) + '\n');
     await fs.rename(tmp, this.stateFile);
