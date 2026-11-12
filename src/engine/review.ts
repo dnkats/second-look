@@ -52,6 +52,21 @@ type UndoEntry =
   | { kind: 'tree'; label: string; before: string; after: string }
   | { kind: 'batch'; label: string; entries: UndoEntry[] };
 
+/** The objects an undo step puts back, which git gc must not prune. */
+function undoObjects(e: UndoEntry): [string, 'blob' | 'tree'][] {
+  switch (e.kind) {
+    case 'index':
+      // a submodule's commit lives in the submodule
+      return e.before && e.before.mode !== '160000' ? [[e.before.sha, 'blob']] : [];
+    case 'worktree':
+      return e.before ? [[e.before, 'blob']] : [];
+    case 'tree':
+      return [[e.before, 'tree']];
+    case 'batch':
+      return e.entries.flatMap(undoObjects);
+  }
+}
+
 export interface RejectInfo {
   path: string;
   /** 1-based first line of the rejected text in the file as it was. */
@@ -118,6 +133,8 @@ export class Review {
   private readonly env: Record<string, string>;
   private readonly blobCache = new Map<string, Buffer>();
   private protectedTree?: string;
+  private protectedUndo?: string;
+  private undoCommit?: { tree: string; commit: string };
 
   constructor(
     readonly repo: Repo,
@@ -227,6 +244,7 @@ export class Review {
     }
     await this.repo.run(['update-ref', '-d', this.checklistRef]).catch(() => undefined);
     this.protectedTree = undefined;
+    this.protectedUndo = undefined;
   }
 
   /** Picks the base: the last finished review, else where the branch left main, else unpushed commits, else HEAD. */
@@ -382,15 +400,59 @@ export class Review {
     return (await this.repo.text(args)).trim();
   }
 
-  /** Keeps the checklist's objects reachable, so git gc cannot prune them, and lets the index be rebuilt. */
+  /**
+   * Keeps the checklist's objects reachable, so git gc cannot prune them, and
+   * lets the index be rebuilt. What the undo steps would put back hangs on the
+   * same commit as a second parent.
+   */
   private async protect(state: ReviewState): Promise<void> {
     const tree = await this.writeTree();
-    if (tree === this.protectedTree) {
+    const undo = await this.undoTree();
+    if (tree === this.protectedTree && undo === this.protectedUndo) {
       return;
     }
-    const commit = await this.commitTree(tree, [state.base], `Second Look checklist for ${this.branch}`);
+    const parents = [state.base];
+    if (undo) {
+      if (this.undoCommit?.tree !== undo) {
+        this.undoCommit = { tree: undo, commit: await this.commitTree(undo, [], `Second Look undo steps for ${this.branch}`) };
+      }
+      parents.push(this.undoCommit.commit);
+    }
+    const commit = await this.commitTree(tree, parents, `Second Look checklist for ${this.branch}`);
     await this.repo.run(['update-ref', this.checklistRef, commit]);
     this.protectedTree = tree;
+    this.protectedUndo = undo;
+  }
+
+  /** A tree of everything the undo steps would put back; undefined when there is nothing. */
+  private async undoTree(): Promise<string | undefined> {
+    const objects = new Map<string, 'blob' | 'tree'>();
+    for (const e of await this.loadUndo()) {
+      for (const [sha, type] of undoObjects(e)) {
+        objects.set(sha, type);
+      }
+    }
+    if (objects.size === 0) {
+      return undefined;
+    }
+    const mktree = async (list: [string, 'blob' | 'tree'][]) =>
+      (await this.repo.run(['mktree'], undefined, list.map(([sha, type]) => `${type === 'tree' ? '040000' : '100644'} ${type} ${sha}\t${sha}\n`).join(''))).stdout.toString('utf8').trim();
+    try {
+      return await mktree([...objects]);
+    } catch {
+      // steps recorded before their objects were kept: git gc may have taken some already
+      const present: [string, 'blob' | 'tree'][] = [];
+      for (const [sha, type] of objects) {
+        if (await this.hasObject(sha)) {
+          present.push([sha, type]);
+        }
+      }
+      return present.length > 0 ? mktree(present) : undefined;
+    }
+  }
+
+  private async hasObject(sha: string): Promise<boolean> {
+    return (await this.repo.git.run(['cat-file', '-e', sha], { cwd: this.repo.root, okCodes: [1, 128] })).code === 0;
   }
 
   /** Files with changes not accepted yet: the checklist against the working tree. */
@@ -628,13 +690,14 @@ export class Review {
 
   rejectHunk(p: string, key: HunkKey): Promise<void> {
     return this.exclusive(async () => {
-      await this.requireState();
+      const state = await this.requireState();
       const t = await this.pendingTexts(p);
       const h = findHunk(t.hunks, key);
       if (!h) {
         throw new StaleChangeError();
       }
       await this.rejectUnlocked(p, t.newText, h);
+      await this.protect(state);
     });
   }
 
@@ -644,13 +707,14 @@ export class Review {
    */
   rejectBlock(p: string, h: Hunk): Promise<void> {
     return this.exclusive(async () => {
-      await this.requireState();
+      const state = await this.requireState();
       const t = await this.pendingTexts(p);
       const now = splitLines(t.newText).slice(h.newStart, h.newStart + h.newCount);
       if (now.length !== h.newLines.length || now.some((l, i) => l !== h.newLines[i])) {
         throw new StaleChangeError();
       }
       await this.rejectUnlocked(p, t.newText, h);
+      await this.protect(state);
     });
   }
 
@@ -695,8 +759,9 @@ export class Review {
 
   rejectFile(p: string): Promise<void> {
     return this.exclusive(async () => {
-      await this.requireState();
+      const state = await this.requireState();
       await this.pushUndo(await this.rejectFileUnlocked(p));
+      await this.protect(state);
     });
   }
 
@@ -734,13 +799,14 @@ export class Review {
   /** Rejects every pending file; one undo step brings them all back. */
   rejectAll(): Promise<void> {
     return this.exclusive(async () => {
-      await this.requireState();
+      const state = await this.requireState();
       const entries: UndoEntry[] = [];
       for (const f of await this.pendingUnlocked()) {
         entries.push(await this.rejectFileUnlocked(f.path));
       }
       if (entries.length > 0) {
         await this.pushUndo({ kind: 'batch', label: 'reject everything', entries });
+        await this.protect(state);
       }
     });
   }
@@ -790,6 +856,11 @@ export class Review {
   }
 
   private async checkUndo(e: UndoEntry): Promise<void> {
+    for (const [sha] of undoObjects(e)) {
+      if (!(await this.hasObject(sha))) {
+        throw new UndoConflictError(`Cannot undo "${e.label}": git gc removed the content it would put back.`);
+      }
+    }
     const same = (a: IndexEntry | null | undefined, b: IndexEntry | null) => (a?.mode ?? null) === (b?.mode ?? null) && (a?.sha ?? null) === (b?.sha ?? null);
     switch (e.kind) {
       case 'index':

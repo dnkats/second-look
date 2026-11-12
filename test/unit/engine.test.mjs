@@ -458,3 +458,34 @@ test('accepting given content (the diff gutter\'s Accept Block) takes one block,
   await r.undo();
   assert.equal((await r.pendingTexts('a.txt')).hunks.length, 2);
 });
+
+test('undo survives git gc: what the undo steps put back stays reachable', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  await r.ensure();
+  const [h1, h2] = (await r.pendingTexts('a.txt')).hunks;
+  await r.acceptHunk('a.txt', hunkKey(h1));
+  // the half-accepted a.txt is then only in the undo step of the second accept
+  await r.acceptHunk('a.txt', hunkKey(h2));
+  // the rejected new file is only in its undo step
+  await r.rejectFile('b.txt');
+  await r.acceptAll();
+  git(dir, 'gc', '-q', '--prune=now');
+  for (let i = 0; i < 4; i++) {
+    assert.ok(await r.undo());
+  }
+  assert.equal(read(dir, 'b.txt'), 'new file\n');
+  assert.deepEqual(await pendingPaths(r), ['M a.txt', 'A b.txt', 'D c.txt']);
+  assert.deepEqual(await acceptedPaths(r), []);
+});
+
+test('an undo step whose content git gc already took is refused with a message; newer steps still work', async () => {
+  const dir = agentBranch();
+  const r = await openReview(dir);
+  await r.ensure();
+  // a step from before undo content was kept, pointing at a pruned blob
+  writeFileSync(r.undoFile, JSON.stringify([{ kind: 'worktree', label: 'reject x.txt', path: 'x.txt', before: '1'.repeat(40), after: null }]));
+  await r.acceptFile('b.txt');
+  assert.equal(await r.undo(), 'accept b.txt');
+  await assert.rejects(r.undo(), (e) => e instanceof engine.UndoConflictError && /git gc removed/.test(e.message));
+});
