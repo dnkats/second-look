@@ -72,3 +72,11 @@ read Agent Skills; VS Code's own chat gets it automatically. For other agents,
 [The guide](docs/guide.md) has the details: every command, what a review
 covers on rebases and pulls, where the state lives, the limitations, the
 settings and how to build and release.
+
+## Contributors
+
+- [Daniel Kats](https://github.com/dnkats): author
+- [Yifan Cheng](https://github.com/zhaivanczha): repositories in subfolders
+  and the Repositories view (0.2.2)
+
+Pull requests are welcome at [dnkats/second-look](https://github.com/dnkats/second-look).
