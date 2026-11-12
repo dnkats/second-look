@@ -2,7 +2,7 @@
   "name": "second-look",
   "displayName": "Second Look",
   "description": "Review what your coding agent changed, change by change: accept, reject, edit, leave comments for the agent, and finish when you're done.",
-  "version": "0.1.14",
+  "version": "0.2.0",
   "publisher": "dnkats",
   "license": "MIT",
   "repository": {
@@ -38,7 +38,8 @@
     "typecheck": "tsc -p . --noEmit",
     "test": "npm run build && node --test test/unit/*.test.mjs",
     "test:vscode": "npm run build && node test/vscode/run.mjs",
-    "package": "npm run build && vsce package --no-dependencies"
+    "package": "npm run build && vsce package --no-dependencies",
+    "marketplace": "npm run build && vsce publish --no-dependencies --allow-proposed-apis contribDiffEditorGutterToolBarMenus"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",

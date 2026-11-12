@@ -9,10 +9,17 @@ stage, commit or pick branches for any of this.
 
 ## How it works
 
-The Second Look icon in the activity bar opens the list of changes still to
-review, file by file, with every change inside a file listed under it. The
-line at the top says what the list covers, for example "Changes on damping
-since it left main".
+The Second Look icon in the activity bar opens its view. In a repository you
+have not reviewed with Second Look before, the view shows only **Start
+Review**: until you press it, nothing is highlighted, nothing is counted and
+nothing is written into `.git`. After that the repository is reviewed
+whenever you open it, on every branch and in every worktree.
+
+The view then lists the changes still to review, file by file, with every
+change inside a file listed under it. The line at the top says what the list
+covers, for example "Changes on damping since it left main". In a workspace
+with several repositories, each one gets its own part of the list, and Start
+Review in the view's `...` menu starts the others.
 
 Click a file or a change to open it in a diff: on the left the text you have
 accepted so far, on the right the file as it is now. For every change you can
@@ -32,9 +39,16 @@ file (VS Code's own next and previous change, which Second Look takes over in
 review diffs and in files with changes to review); the line at the top of the
 view lists these keys while there is something to review.
 **Preferences: Keyboard Shortcuts**, searched for Second Look, changes them.
-In the
-ordinary editor the lines still to review are highlighted, with a dashed line
-where text was removed; hovering them shows the text they replaced.
+Accept and Reject are also in the editor's right-click menu. In the ordinary
+editor the lines still to review are highlighted, with a dashed line where
+text was removed; hovering them shows the text they replaced. The diff button
+in the title bar of such a file, **Review Changes in This File**, opens its
+review diff.
+
+**Open All Changes to Review** in the view's title bar shows every file to
+review in one scrolling multi-file diff. **Accept All Changes** and **Reject
+All Changes** in the view's `...` menu act on everything still on the list;
+rejecting all asks first. The status bar shows how many changes are left.
 
 The first button on each row of the list, Open File, opens the change in the
 file itself instead of the diff. The editor shows the file as it is, while a
@@ -65,9 +79,11 @@ that it allows the API, so the links go only after your first click on Accept
 Block or Reject Block, and again after each VS Code update.
 
 **Pause Review** in the view's `...` menu switches all this off in the window,
-for when you open a checkout and do not want to review now: no highlights,
-links, keys, arrows or counts, and the list is empty. **Resume Review** brings
-it back as it was. Comments stay visible either way.
+for when you open a checkout you have reviewed before and do not want to
+review now: no highlights, links, keys, arrows or counts, and the list is
+empty. **Resume Review** brings it back as it was. The pause holds for that
+window across restarts. Comments stay visible either way, and you can leave
+comments before you ever start a review.
 
 Accepted changes are listed under **Accepted**; **Review Again** puts one back
 on the list. **Undo** in the view's title bar takes back the last accept or
@@ -134,13 +150,16 @@ left it.
 
 ## Install
 
-The extension runs where your files are: locally, or on the remote machine in
-a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
-Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
+Search for Second Look in the Extensions view, or run
 
 ```
-code --install-extension second-look-0.1.14.vsix
+code --install-extension dnkats.second-look
 ```
+
+The extension runs where your files are: locally, or on the remote machine in
+a Remote-SSH, WSL or dev-container window, where the Extensions view installs
+it on the remote side. A `.vsix` file installs from the Extensions view's `…`
+menu (Install from VSIX) or with `code --install-extension <file>.vsix`.
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).
 Moving a review along a rebase needs git 2.40 or newer; with an older git,
@@ -149,16 +168,23 @@ main's changes show up for review after a rebase.
 ## Where the state lives
 
 Everything is inside the checkout's git directory and never touches git's own
-index, the staging area:
+index, the staging area. Second Look sends nothing over the network.
 
+- `.git/second-look/started`: reviews were started in this repository (in
+  the main checkout's `.git`, for all worktrees),
 - `.git/second-look/<branch>.json`, `.index` and `.undo.json`: the review in
-  progress (the index file holds what you accepted),
+  progress (the index file holds what you accepted); in a worktree these and
+  the comments are under `.git/worktrees/<name>/second-look`, and go when the
+  worktree is removed,
 - `.git/second-look/comments.json`: the comments,
-- `refs/second-look/<branch>`: keeps the accepted content safe from
-  `git gc`,
+- `refs/second-look/<branch>`: keeps the accepted content, and what Undo
+  would put back, safe from `git gc`,
 - `refs/reviewed/<branch>`: where the last finished review ended.
 
-Delete those and the extension has never been there.
+Earlier versions of what you accepted are not kept; `git gc` removes them in
+time. When a branch is deleted, its review files and both refs go the next
+time the checkout is opened or switches branches. Delete all of the above and
+the extension has never been there.
 
 ## With the git-review command line tool
 
@@ -182,9 +208,11 @@ normal.
   **Hide CodeLens Links in Diffs** in the Second Look view's `...` menu turns
   them all off (it sets `diffEditor.codeLens` to `false`); Show turns them
   back on.
-- Accept Block and Reject Block use a proposed VS Code API: they need the
-  runtime argument above, and an extension using it cannot be published on
-  the Marketplace as it is.
+- Accept Block and Reject Block use a proposed VS Code API: they show only
+  with the runtime argument above. Without it VS Code writes an error about
+  the proposal into its log at startup and runs Second Look without them; the Accept and Reject links take their place. Proposed APIs
+  change, so a VS Code update can break these two buttons until Second Look
+  follows.
 - An editor's title bar shows about seven buttons and moves the rest under
   `...`, the later ones first; which ones depends on what all extensions add
   for that file. Second Look's arrows come first, VS Code's own diff arrows
@@ -222,6 +250,7 @@ npm install
 npm test               # engine and comment tests on scratch repositories
 npm run test:vscode    # the extension in a real VS Code, headless via Xvfb
 npm run package        # builds second-look-<version>.vsix
+npm run marketplace    # publishes to the Marketplace (vsce login first)
 node test/vscode/demo.mjs shots   # screenshots of the UI
 ```
 
