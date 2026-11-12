@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+A logo, and a shorter README: getting started, the gutter buttons and the
+comments come first; the details moved to docs/guide.md.
+
 ## 0.2.0
 
 Opening a repository no longer starts a review in it. The view shows Start

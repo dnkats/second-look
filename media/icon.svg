@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b4c8c"/><stop offset="1" stop-color="#1a2b52"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="url(#bg)"/>
+  <!-- page -->
+  <path d="M52 40h96l36 36v140a8 8 0 0 1-8 8H52a8 8 0 0 1-8-8V48a8 8 0 0 1 8-8z" fill="#f4f6fb"/>
+  <path d="M148 40v28a8 8 0 0 0 8 8h28z" fill="#c9d3e8"/>
+  <!-- diff lines -->
+  <rect x="62" y="92" width="96" height="16" rx="4" fill="#f2c4c4"/>
+  <rect x="62" y="92" width="10" height="16" rx="3" fill="#d9534f"/>
+  <rect x="62" y="118" width="104" height="16" rx="4" fill="#c6ecd0"/>
+  <rect x="62" y="118" width="10" height="16" rx="3" fill="#2f9e55"/>
+  <rect x="62" y="144" width="70" height="12" rx="4" fill="#d5dbe8"/>
+  <rect x="62" y="166" width="58" height="12" rx="4" fill="#d5dbe8"/>
+  <!-- magnifier -->
+  <line x1="196" y1="198" x2="226" y2="228" stroke="#f0b429" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="166" cy="168" r="44" fill="#ffffff" stroke="#f0b429" stroke-width="12"/>
+  <path d="M146 168l14 14 26-28" fill="none" stroke="#2f9e55" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
