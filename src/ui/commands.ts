@@ -37,7 +37,15 @@ export class Commands {
     private readonly manager: Manager,
     /** Told when a button in the diff gutter runs, which shows that VS Code has them. */
     private readonly gutterButtonUsed: () => unknown = () => undefined,
+    /** Told right after the accepted text changed, before the slower refresh of the list. */
+    private readonly acceptedChanged: () => unknown = () => undefined,
   ) {}
+
+  /** After a change to the review: the diffs' left sides first, then the list, links and highlights. */
+  private async refreshAfter(m: RepoModel): Promise<void> {
+    this.acceptedChanged();
+    await m.refresh();
+  }
 
   register(context: vscode.ExtensionContext): void {
     const cmd = (id: string, fn: (...args: never[]) => Promise<unknown> | unknown) =>
@@ -264,7 +272,7 @@ export class Commands {
     } else {
       await m.review!.acceptFile(t.path);
     }
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   private async reject(a: Arg): Promise<void> {
@@ -290,7 +298,7 @@ export class Commands {
       }
       await m.review!.rejectFile(t.path);
     }
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   private async unaccept(a: Arg): Promise<void> {
@@ -304,7 +312,7 @@ export class Commands {
     } else {
       await m.review!.unacceptFile(t.path);
     }
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   private async acceptAll(a: Arg): Promise<void> {
@@ -314,7 +322,7 @@ export class Commands {
     }
     await this.saveDirty(m);
     await m.review.acceptAll();
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   private async rejectAll(a: Arg): Promise<void> {
@@ -333,7 +341,7 @@ export class Commands {
     }
     await this.saveDirty(m);
     await m.review.rejectAll();
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   /**
@@ -349,7 +357,7 @@ export class Commands {
     const m = this.modelOf({ root, path: rel, group: 'pending' });
     await this.saveDirty(m, rel);
     await m.review!.acceptContent(rel, ctx.originalWithModifiedChanges);
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   /**
@@ -380,7 +388,7 @@ export class Commands {
       newLines: splitLines(t.newText).slice(ns, ne),
     };
     await m.review!.rejectBlock(rel, block);
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   /** The editor's file and the change at the cursor, on either side of a review diff. */
@@ -426,7 +434,7 @@ export class Commands {
     } else {
       await m.review!.rejectHunk(rel, hunkKey(hunk));
     }
-    await m.refresh();
+    await this.refreshAfter(m);
     await this.step(1, hunk.newStart);
   }
 
@@ -482,7 +490,7 @@ export class Commands {
       return;
     }
     const label = await m.review.undo();
-    await m.refresh();
+    await this.refreshAfter(m);
     if (label) {
       void vscode.window.setStatusBarMessage(`Undid: ${label}`, 4000);
     }
@@ -535,7 +543,7 @@ export class Commands {
       }
     }
     const r = await m.review.finish({ commitMessage });
-    await m.refresh();
+    await this.refreshAfter(m);
     void vscode.window.showInformationMessage(r.committed ? `Review finished; your edits are committed as ${r.committed.slice(0, 7)}.` : 'Review finished.');
   }
 
@@ -603,7 +611,7 @@ export class Commands {
       }
     }
     await m.review.start(choice);
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 
   private async takeOver(a: Arg): Promise<void> {
@@ -623,6 +631,6 @@ export class Commands {
       return;
     }
     await m.review.takeOverTerminalReview();
-    await m.refresh();
+    await this.refreshAfter(m);
   }
 }

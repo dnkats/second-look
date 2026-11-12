@@ -63,7 +63,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   status.command = 'secondLook.view.focus';
   context.subscriptions.push(status);
 
-  new Commands(manager, gutterButtonUsed).register(context);
+  new Commands(manager, gutterButtonUsed, () => content.refreshAll()).register(context);
   const comments = new CommentsUI(manager, () => void offerSkill(context));
   comments.register(context);
   context.subscriptions.push(comments);

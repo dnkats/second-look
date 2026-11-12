@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.14
+
+After an accept or reject the diff's left side is updated right away, before
+the list and the links, which takes about half the time it did. The README
+says how to make VS Code redraw diffs of files with many changes faster.
+
 ## 0.1.13
 
 Accept no longer fails now and then with "index.lock: File exists": the list's

@@ -139,7 +139,7 @@ a Remote-SSH, WSL or dev-container window. Install the `.vsix` from the
 Extensions view's `…` menu (Install from VSIX), or in the window's terminal:
 
 ```
-code --install-extension second-look-0.1.13.vsix
+code --install-extension second-look-0.1.14.vsix
 ```
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).
@@ -195,6 +195,11 @@ normal.
   [#314898](https://github.com/microsoft/vscode/issues/314898)); Alt+Z twice
   wraps it again, and `"diffEditor.useInlineViewWhenSpaceIsLimited": false`
   avoids the switch.
+- After every accept VS Code computes the whole diff of the file anew, and its
+  default diff algorithm takes seconds for files with many changes, in git's
+  diffs too. With `"diffEditor.diffAlgorithm": "legacy"` the same diff is
+  redrawn several times faster: for a file of 1,000 lines with 116 changes the
+  accepted block showed after 0.5 s instead of 3.7 s.
 - Binary files, renames (a deletion plus a new file), submodules and changes of
   the file mode are accepted or rejected as whole files.
 - One person reviews a checkout at a time.
