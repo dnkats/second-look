@@ -7,7 +7,8 @@ Review, and until it is pressed nothing is highlighted or counted and nothing
 is written into `.git`; from then on the repository is reviewed whenever it
 is opened, in all its worktrees. Repositories reviewed with an earlier version
 count as started. Comments work without a start. The README covers installing
-from the Marketplace and the commands it did not mention.
+from the Marketplace, allowing the gutter buttons, and the commands it did not
+mention.
 
 Undo works after `git gc`: what it would put back is kept reachable from the
 review's ref. Before, `git gc` could remove it after two weeks, and undoing an

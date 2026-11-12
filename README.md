@@ -63,20 +63,13 @@ selected). VS Code puts its own Revert Block there too, an arrow (or under
 `⋯` for short changes); that one is a plain edit of the file: Ctrl+Z in the
 file takes it back, Second Look's Undo does not, and the agent is not told.
 VS Code shows Second Look's buttons only once you allow them, because they
-use an API that is still in preview: run
-**Preferences: Configure Runtime Arguments**, add
-
-```
-"enable-proposed-api": ["dnkats.second-look"]
-```
-
-to the file that opens, and restart VS Code. With Remote-SSH this is the file
-on your own computer, where the VS Code window runs. Once Accept Block is
-there, Second Look leaves its Accept and Reject links out of review diffs: the
-gutter has both, and each link line costs an empty line on the other side. The
-editor keeps its links. Over Remote-SSH, VS Code does not tell the extension
-that it allows the API, so the links go only after your first click on Accept
-Block or Reject Block, and again after each VS Code update.
+use an API that is still in preview; the Install section below says how.
+Once Accept Block is there, Second Look leaves its Accept and Reject links out
+of review diffs: the gutter has both, and each link line costs an empty line
+on the other side. The editor keeps its links. Over Remote-SSH, VS Code does
+not tell the extension that it allows the API, so the links go only after your
+first click on Accept Block or Reject Block, and again after each VS Code
+update.
 
 **Pause Review** in the view's `...` menu switches all this off in the window,
 for when you open a checkout you have reviewed before and do not want to
@@ -160,6 +153,21 @@ The extension runs where your files are: locally, or on the remote machine in
 a Remote-SSH, WSL or dev-container window, where the Extensions view installs
 it on the remote side. A `.vsix` file installs from the Extensions view's `…`
 menu (Install from VSIX) or with `code --install-extension <file>.vsix`.
+
+Accept Block and Reject Block in the diff's gutter need one more step, since
+VS Code allows the preview API they use only for extensions you name. Run
+**Preferences: Configure Runtime Arguments** and add
+
+```
+"enable-proposed-api": ["dnkats.second-look"]
+```
+
+inside the braces of the file that opens (with a comma after the entry before
+it; if the key is there already, add the name to its list). Then quit VS Code
+and start it again; reloading the window is not enough. With Remote-SSH, WSL
+or a dev container this is the file on your own computer, where the VS Code
+window runs. Without this step everything else works, and the diffs show
+Accept and Reject links instead.
 
 Requirements: VS Code 1.90 or newer and git on the PATH (or in `git.path`).
 Moving a review along a rebase needs git 2.40 or newer; with an older git,
