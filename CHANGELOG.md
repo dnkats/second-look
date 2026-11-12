@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.2
 
 Repositories in subfolders of the opened folder are reviewed too: the ones
 that VS Code's Source Control finds there, including ones cloned or created
