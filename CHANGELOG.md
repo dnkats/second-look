@@ -7,8 +7,12 @@ that VS Code's Source Control finds there, including ones cloned or created
 after the window opened. Before, Second Look looked only at the repository
 the opened folder itself is in, and a folder holding several repositories
 showed "Open a folder that is a git repository". Refresh looks for new
-repositories as well. With more than three repositories and nothing to review
-in any of them, the view lists them all instead of staying empty.
+repositories as well.
+
+With more than one repository, a Repositories view above the review lists
+them, as in Source Control. The review view, now called Changes, stays empty
+until one is chosen there, then shows that one; the commands that act on a
+whole review act on it, and choosing another switches to that one.
 
 ## 0.2.1
 

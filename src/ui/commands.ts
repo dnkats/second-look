@@ -24,7 +24,7 @@ interface GutterContext {
   originalWithModifiedChanges: string;
 }
 
-function isNode(a: unknown): a is Node {
+function isNode(a: unknown): a is Exclude<Node, { kind: 'others' }> {
   return typeof a === 'object' && a !== null && 'kind' in a && 'model' in a;
 }
 
@@ -153,7 +153,9 @@ export class Commands {
     }
     const active = vscode.window.activeTextEditor?.document.uri;
     const fromEditor = active ? this.manager.modelFor(active) : undefined;
-    const candidates = this.manager.models.filter(want);
+    // with a repository selected in the Repositories view, the one selected; before a choice, any of them
+    const selected = this.manager.selected;
+    const candidates = (selected ? [selected] : this.manager.models).filter(want);
     if (fromEditor && candidates.includes(fromEditor)) {
       return fromEditor;
     }

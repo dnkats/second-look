@@ -10,6 +10,7 @@ import { ItemDecorations } from './ui/decorations';
 import { describeBase } from './ui/describe';
 import { Highlights } from './ui/highlights';
 import { Manager, RepoModel } from './ui/model';
+import { ReposTree } from './ui/repos';
 import { ReviewTree, repoDescription } from './ui/tree';
 import { CONTENT_SCHEME } from './ui/uris';
 
@@ -28,6 +29,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   const tree = new ReviewTree(manager);
   const view = vscode.window.createTreeView('secondLook.view', { treeDataProvider: tree, showCollapseAll: true });
   context.subscriptions.push(view);
+  const repos = new ReposTree(manager);
+  const reposView = vscode.window.createTreeView('secondLook.repos', { treeDataProvider: repos });
+  context.subscriptions.push(
+    reposView,
+    reposView.onDidChangeSelection((e) => {
+      const s = e.selection[0];
+      manager.select(s?.kind === 'repo' ? s.model : undefined);
+    }),
+  );
 
   const log = vscode.window.createOutputChannel('Second Look', { log: true });
   context.subscriptions.push(log);
@@ -80,12 +90,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
 
   const update = () => {
     tree.refresh();
+    repos.refresh();
     content.refreshAll();
     lenses.refresh();
     highlights.schedule();
     // paused, the view shows only how to resume
     const models = manager.paused ? [] : manager.models;
-    view.message = models.length === 1 && (models[0].state === 'changes' || models[0].state === 'reviewed') ? header(models[0]) : undefined;
+    const shown = manager.paused ? [] : manager.shown;
+    view.message = shown.length === 1 && (shown[0].state === 'changes' || shown[0].state === 'reviewed') ? header(shown[0]) : undefined;
+    view.description = manager.paused ? undefined : manager.selected?.name;
+    // the badge and the status bar count every repository, also while one is selected
     const hunks = models.reduce((n, m) => n + m.pendingHunkCount, 0);
     view.badge = hunks > 0 ? { value: hunks, tooltip: `${hunks} change${hunks === 1 ? '' : 's'} to review` } : undefined;
     const showStatus = vscode.workspace.getConfiguration('secondLook').get<boolean>('statusBar', true);
@@ -125,7 +139,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   await manager.discover();
   update();
   // for the integration tests
-  return { manager, comments, tree, view, lenses };
+  return { manager, comments, tree, view, lenses, repos, reposView };
 }
 
 // no-break spaces keep each key with its word when the line wraps
@@ -141,10 +155,14 @@ function header(m: RepoModel): string {
 }
 
 async function setContexts(manager: Manager): Promise<void> {
-  const models = manager.models;
+  // the review view and its buttons are about the repository selected in the Repositories view, if any
+  const models = manager.shown;
   let state: string;
-  if (models.length === 0) {
+  if (manager.models.length === 0) {
     state = 'noRepo';
+  } else if (models.length === 0) {
+    // several repositories, none chosen in the Repositories view yet
+    state = 'choose';
   } else if (models.length > 1) {
     state = 'multi';
   } else {
@@ -154,6 +172,7 @@ async function setContexts(manager: Manager): Promise<void> {
   // paused, the buttons, arrows and keys that act on the review are gone
   const live = !manager.paused;
   await set('secondLook.paused', manager.paused);
+  await set('secondLook.multiRepo', manager.models.length > 1);
   await set('secondLook.state', state);
   await set('secondLook.canStart', models.some((m) => m.state === 'off'));
   await set('secondLook.hasPending', live && models.some((m) => m.pending.length > 0));

@@ -6,20 +6,26 @@ version.
 
 ## How it works
 
-The Second Look icon in the activity bar opens its view. In a repository you
-have not reviewed with Second Look before, the view shows only **Start
-Review**: until you press it, nothing is highlighted, nothing is counted and
-nothing is written into `.git`. After that the repository is reviewed
-whenever you open it, on every branch and in every worktree.
+The Second Look icon in the activity bar opens its **Changes** view. In a
+repository you have not reviewed with Second Look before, the view shows
+only **Start Review**: until you press it, nothing is highlighted, nothing
+is counted and nothing is written into `.git`. After that the repository is
+reviewed whenever you open it, on every branch and in every worktree.
 
 The view then lists the changes still to review, file by file, with every
 change inside a file listed under it. The line at the top says what the list
-covers, for example "Changes on damping since it left main". In a workspace
-with several repositories, each one gets its own part of the list, and Start
-Review in the view's `...` menu starts the others. These are the
-repositories of the workspace folders and the ones that VS Code's Source
-Control finds inside them: by default one folder level down, deeper with the
-`git.repositoryScanMaxDepth` setting.
+covers, for example "Changes on damping since it left main".
+
+With more than one repository, a **Repositories** view above Changes lists
+them all, as in Source Control, each with its branch and what there is to
+review. These are the repositories of the workspace folders and the ones
+that VS Code's Source Control finds inside them: by default one folder level
+down, deeper with the `git.repositoryScanMaxDepth` setting. Changes stays
+empty until you choose one there; it then shows only that repository, as if
+it were the only one, and the buttons and commands that act on a whole
+review (Start Review, Finish, Undo, Accept All, …) act on it too. Choosing
+another switches to that one. The badge and the status bar keep counting the
+changes in every repository.
 
 Click a file or a change to open it in a diff: on the left the text you have
 accepted so far, on the right the file as it is now. For every change you can
@@ -211,7 +217,7 @@ normal.
 - To show its Accept and Reject links in diffs, Second Look turns VS Code's
   `diffEditor.codeLens` on by default. Links of other extensions then show in
   diffs too, Julia's Run, Above, Below and Debug above each cell for example.
-  **Hide CodeLens Links in Diffs** in the Second Look view's `...` menu turns
+  **Hide CodeLens Links in Diffs** in the Changes view's `...` menu turns
   them all off (it sets `diffEditor.codeLens` to `false`); Show turns them
   back on.
 - Accept Block and Reject Block use a proposed VS Code API: they show only

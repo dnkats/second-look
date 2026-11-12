@@ -280,6 +280,7 @@ export class Manager implements vscode.Disposable {
   private gitApiListeners: vscode.Disposable[] = [];
   private discovering?: Promise<void>;
   private nextDiscovery?: Promise<void>;
+  private selectedModel?: RepoModel;
 
   constructor(private readonly makeHooks: (m: RepoModel) => ReviewHooks) {
     const gitPath = vscode.workspace.getConfiguration('git').get<string | string[]>('path');
@@ -381,6 +382,9 @@ export class Manager implements vscode.Disposable {
     }
     const removed = this.models.filter((m) => !found.includes(m));
     removed.forEach((m) => m.dispose());
+    if (this.selectedModel && removed.includes(this.selectedModel)) {
+      this.selectedModel = undefined;
+    }
     this.models = found;
     if (found.length > 0 && this.version[0] === 0) {
       this.version = await gitVersion(this.git, found[0].repo.root);
@@ -390,6 +394,30 @@ export class Manager implements vscode.Disposable {
     if (added.length > 0 || removed.length > 0) {
       this.emitter.fire();
     }
+  }
+
+  /** The repository chosen in the Repositories view; undefined when all are shown. */
+  get selected(): RepoModel | undefined {
+    return this.models.length > 1 && this.selectedModel && this.models.includes(this.selectedModel) ? this.selectedModel : undefined;
+  }
+
+  select(m: RepoModel | undefined): void {
+    if (m !== this.selectedModel) {
+      this.selectedModel = m;
+      this.emitter.fire();
+    }
+  }
+
+  /**
+   * The repositories the Changes view shows: the one selected in the Repositories view, the only one when
+   * there is just one, and none while several wait for a choice.
+   */
+  get shown(): RepoModel[] {
+    const s = this.selected;
+    if (s) {
+      return [s];
+    }
+    return this.models.length === 1 ? this.models : [];
   }
 
   private track(m: RepoModel): RepoModel {

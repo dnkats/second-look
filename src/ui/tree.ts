@@ -19,7 +19,10 @@ export interface Target {
 }
 
 export type Node =
-  | { kind: 'repo'; model: RepoModel }
+  /** `other`: listed under Other repositories. */
+  | { kind: 'repo'; model: RepoModel; other?: boolean }
+  /** Other repositories: with many repositories, the ones with nothing to do. */
+  | { kind: 'others' }
   | { kind: 'group'; model: RepoModel; group: Group }
   | { kind: 'file'; model: RepoModel; group: Group; file: FileItem }
   | { kind: 'hunk'; model: RepoModel; group: Group; file: FileItem; hunk: Hunk; target: Target }
@@ -92,17 +95,22 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
       if (this.manager.paused) {
         return [];
       }
-      const models = this.manager.models;
+      const models = this.manager.shown;
       if (models.length === 1) {
         return this.repoChildren(models[0]);
       }
-      // with many repositories, those with nothing to do are left out, unless that would leave the list empty
-      const busy = models.filter((m) => (m.state !== 'clean' && m.state !== 'off') || models.length <= 3);
-      return (busy.length > 0 ? busy : models).map((model) => ({ kind: 'repo', model }));
+      const { shown, others } = this.split();
+      const top: Node[] = shown.map((model) => ({ kind: 'repo', model }));
+      if (others.length > 0) {
+        top.push({ kind: 'others' });
+      }
+      return top;
     }
     switch (n.kind) {
       case 'repo':
         return this.repoChildren(n.model);
+      case 'others':
+        return this.split().others.map((model) => ({ kind: 'repo', model, other: true }));
       case 'group': {
         const files = n.group === 'pending' ? n.model.pending : n.model.accepted;
         return files.map((file) => ({ kind: 'file', model: n.model, group: n.group, file }));
@@ -126,8 +134,22 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
     }
   }
 
+  /**
+   * With more than three repositories, those with nothing to do (not started, or nothing to review) go under
+   * Other repositories, collapsed, unless that would leave nothing else in the list.
+   */
+  private split(): { shown: RepoModel[]; others: RepoModel[] } {
+    const models = this.manager.shown;
+    const idle = (m: RepoModel) => m.state === 'clean' || m.state === 'off';
+    const shown = models.filter((m) => !idle(m));
+    if (models.length <= 3 || shown.length === 0) {
+      return { shown: models, others: [] };
+    }
+    return { shown, others: models.filter(idle) };
+  }
+
   private repoChildren(m: RepoModel): Node[] {
-    const single = this.manager.models.length === 1;
+    const single = this.manager.shown.length === 1;
     const out: Node[] = [];
     if (m.state === 'terminal' && !single) {
       out.push({ kind: 'message', model: m, label: 'A terminal review (git review) is open here — take it over', icon: 'terminal', command: { command: 'secondLook.takeOverTerminal', title: 'Take Over', arguments: [m.repo.root] } });
@@ -153,11 +175,27 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
   getTreeItem(n: Node): vscode.TreeItem {
     switch (n.kind) {
       case 'repo': {
-        const item = new vscode.TreeItem(n.model.name, vscode.TreeItemCollapsibleState.Expanded);
-        item.id = n.model.repo.root;
+        const item = new vscode.TreeItem(n.model.name, n.other ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded);
+        // VS Code keeps an item's expanded state by its id: a repository that leaves Other repositories opens
+        // expanded only under an id of its own
+        item.id = n.other ? `${n.model.repo.root}#other` : n.model.repo.root;
         item.description = repoDescription(n.model);
         item.iconPath = new vscode.ThemeIcon('repo');
         item.contextValue = 'repo';
+        return item;
+      }
+      case 'others': {
+        const others = this.split().others;
+        const off = others.filter((m) => m.state === 'off').length;
+        const clean = others.length - off;
+        const item = new vscode.TreeItem('Other repositories', vscode.TreeItemCollapsibleState.Collapsed);
+        item.id = 'secondLook#others';
+        item.description = [off > 0 ? `${off} not started` : '', clean > 0 ? `${clean} with nothing to review` : '']
+          .filter((x) => x)
+          .join(' · ');
+        item.tooltip = 'Repositories where no review was started yet, or with nothing to review';
+        item.iconPath = new vscode.ThemeIcon('library');
+        item.contextValue = 'others';
         return item;
       }
       case 'group': {
@@ -231,7 +269,7 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
   }
 
   getParent(n: Node): Node | undefined {
-    const single = this.manager.models.length === 1;
+    const single = this.manager.shown.length === 1;
     switch (n.kind) {
       case 'hunk':
         return { kind: 'file', model: n.model, group: n.group, file: n.file };
@@ -239,7 +277,9 @@ export class ReviewTree implements vscode.TreeDataProvider<Node> {
         return { kind: 'group', model: n.model, group: n.group };
       case 'group':
       case 'message':
-        return single ? undefined : { kind: 'repo', model: n.model };
+        return single ? undefined : { kind: 'repo', model: n.model, other: this.split().others.includes(n.model) };
+      case 'repo':
+        return n.other ? { kind: 'others' } : undefined;
       default:
         return undefined;
     }
