@@ -23,10 +23,7 @@ export class ReposTree implements vscode.TreeDataProvider<RepoEntry> {
     if (e || this.manager.models.length < 2) {
       return [];
     }
-    const repos = [...this.manager.models].sort(
-      (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.repo.root.localeCompare(b.repo.root),
-    );
-    return repos.map((model): RepoEntry => ({ kind: 'repo', model }));
+    return this.manager.sorted().map((model): RepoEntry => ({ kind: 'repo', model }));
   }
 
   getTreeItem(e: RepoEntry): vscode.TreeItem {

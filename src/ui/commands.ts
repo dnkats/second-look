@@ -24,7 +24,7 @@ interface GutterContext {
   originalWithModifiedChanges: string;
 }
 
-function isNode(a: unknown): a is Exclude<Node, { kind: 'others' }> {
+function isNode(a: unknown): a is Node {
   return typeof a === 'object' && a !== null && 'kind' in a && 'model' in a;
 }
 

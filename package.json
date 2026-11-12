@@ -63,13 +63,15 @@
           "name": "Repositories",
           "icon": "media/review.svg",
           "contextualTitle": "Second Look",
-          "when": "secondLook.multiRepo && !secondLook.paused"
+          "when": "secondLook.multiRepo && !secondLook.paused",
+          "initialSize": 1
         },
         {
           "id": "secondLook.view",
           "name": "Changes",
           "icon": "media/review.svg",
-          "contextualTitle": "Second Look"
+          "contextualTitle": "Second Look",
+          "initialSize": 4
         }
       ]
     },
@@ -83,11 +85,6 @@
         "view": "secondLook.view",
         "contents": "Open a folder that is a git repository, or that has git repositories in its subfolders, to review the changes in them.",
         "when": "secondLook.state == noRepo && !secondLook.paused"
-      },
-      {
-        "view": "secondLook.view",
-        "contents": "Choose a repository in Repositories above to review its changes.",
-        "when": "secondLook.state == choose && !secondLook.paused"
       },
       {
         "view": "secondLook.view",
@@ -424,7 +421,7 @@
         },
         {
           "command": "secondLook.takeOverTerminal",
-          "when": "secondLook.state == terminal || secondLook.state == multi"
+          "when": "secondLook.state == terminal"
         },
         {
           "command": "secondLook.acceptBlock",

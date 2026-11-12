@@ -281,6 +281,8 @@ export class Manager implements vscode.Disposable {
   private discovering?: Promise<void>;
   private nextDiscovery?: Promise<void>;
   private selectedModel?: RepoModel;
+  /** Root of the repository chosen last in this window, to choose again after a reload. */
+  preferredRoot?: string;
 
   constructor(private readonly makeHooks: (m: RepoModel) => ReviewHooks) {
     const gitPath = vscode.workspace.getConfiguration('git').get<string | string[]>('path');
@@ -382,42 +384,59 @@ export class Manager implements vscode.Disposable {
     }
     const removed = this.models.filter((m) => !found.includes(m));
     removed.forEach((m) => m.dispose());
-    if (this.selectedModel && removed.includes(this.selectedModel)) {
-      this.selectedModel = undefined;
-    }
     this.models = found;
     if (found.length > 0 && this.version[0] === 0) {
       this.version = await gitVersion(this.git, found[0].repo.root);
     }
     // the models already here keep themselves up to date
     await Promise.all(added.map((m) => m.refresh()));
-    if (added.length > 0 || removed.length > 0) {
+    const before = this.selectedModel;
+    if (!this.selectedModel || !found.includes(this.selectedModel)) {
+      this.selectedModel = this.defaultChoice();
+    }
+    if (added.length > 0 || removed.length > 0 || this.selectedModel !== before) {
       this.emitter.fire();
     }
   }
 
-  /** The repository chosen in the Repositories view; undefined when all are shown. */
+  /** With several repositories, the one chosen in the Repositories view; undefined with one or none. */
   get selected(): RepoModel | undefined {
-    return this.models.length > 1 && this.selectedModel && this.models.includes(this.selectedModel) ? this.selectedModel : undefined;
+    if (this.models.length < 2) {
+      return undefined;
+    }
+    // while a search is still deciding, the default it would choose
+    return this.selectedModel && this.models.includes(this.selectedModel) ? this.selectedModel : this.defaultChoice();
   }
 
-  select(m: RepoModel | undefined): void {
-    if (m !== this.selectedModel) {
+  select(m: RepoModel): void {
+    if (m !== this.selectedModel && this.models.includes(m)) {
       this.selectedModel = m;
+      this.preferredRoot = m.repo.root;
       this.emitter.fire();
     }
   }
 
   /**
-   * The repositories the Changes view shows: the one selected in the Repositories view, the only one when
-   * there is just one, and none while several wait for a choice.
+   * Until one is chosen: the one chosen last in this window, else the active editor's, else the first with
+   * something to review, else the first as the Repositories view lists them.
    */
+  private defaultChoice(): RepoModel | undefined {
+    const byRoot = this.models.find((m) => m.repo.root === this.preferredRoot);
+    const active = vscode.window.activeTextEditor?.document.uri;
+    const fromEditor = active ? this.modelFor(active) : undefined;
+    const busy = this.sorted().find((m) => m.state === 'changes' || m.state === 'reviewed' || m.state === 'terminal');
+    return byRoot ?? fromEditor ?? busy ?? this.sorted()[0];
+  }
+
+  /** By name, as the Repositories view lists them. */
+  sorted(): RepoModel[] {
+    return [...this.models].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.repo.root.localeCompare(b.repo.root));
+  }
+
+  /** The repository the Changes view shows: the only one, or the one chosen; none without a repository. */
   get shown(): RepoModel[] {
-    const s = this.selected;
-    if (s) {
-      return [s];
-    }
-    return this.models.length === 1 ? this.models : [];
+    const s = this.selected ?? (this.models.length === 1 ? this.models[0] : undefined);
+    return s ? [s] : [];
   }
 
   private track(m: RepoModel): RepoModel {

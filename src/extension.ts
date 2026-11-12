@@ -31,12 +31,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   context.subscriptions.push(view);
   const repos = new ReposTree(manager);
   const reposView = vscode.window.createTreeView('secondLook.repos', { treeDataProvider: repos });
+  manager.preferredRoot = context.workspaceState.get<string>('repository');
+  // the Repositories view marks the repository shown below; revealing in a hidden view would open it
+  const markChosen = () => {
+    const m = manager.selected;
+    if (m && reposView.visible && reposView.selection[0]?.model !== m) {
+      void Promise.resolve(reposView.reveal({ kind: 'repo', model: m }, { select: true, focus: false })).catch(() => undefined);
+    }
+  };
   context.subscriptions.push(
     reposView,
     reposView.onDidChangeSelection((e) => {
       const s = e.selection[0];
-      manager.select(s?.kind === 'repo' ? s.model : undefined);
+      if (s) {
+        manager.select(s.model);
+        void context.workspaceState.update('repository', s.model.repo.root);
+      }
     }),
+    reposView.onDidChangeVisibility(() => markChosen()),
   );
 
   const log = vscode.window.createOutputChannel('Second Look', { log: true });
@@ -91,6 +103,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   const update = () => {
     tree.refresh();
     repos.refresh();
+    markChosen();
     content.refreshAll();
     lenses.refresh();
     highlights.schedule();
@@ -139,7 +152,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<unknow
   await manager.discover();
   update();
   // for the integration tests
-  return { manager, comments, tree, view, lenses, repos, reposView };
+  return { manager, comments, tree, view, lenses, repos, reposView, workspaceState: context.workspaceState };
 }
 
 // no-break spaces keep each key with its word when the line wraps
@@ -160,11 +173,6 @@ async function setContexts(manager: Manager): Promise<void> {
   let state: string;
   if (manager.models.length === 0) {
     state = 'noRepo';
-  } else if (models.length === 0) {
-    // several repositories, none chosen in the Repositories view yet
-    state = 'choose';
-  } else if (models.length > 1) {
-    state = 'multi';
   } else {
     state = models[0].state;
   }
