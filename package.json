@@ -38,8 +38,7 @@
     "typecheck": "tsc -p . --noEmit",
     "test": "npm run build && node --test test/unit/*.test.mjs",
     "test:vscode": "npm run build && node test/vscode/run.mjs",
-    "package": "npm run build && vsce package --no-dependencies",
-    "marketplace": "npm run build && vsce publish --no-dependencies --allow-proposed-apis contribDiffEditorGutterToolBarMenus"
+    "package": "npm run build && vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",

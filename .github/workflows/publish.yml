@@ -1,0 +1,31 @@
+# Publishes to the VS Code Marketplace when a version tag (v0.2.0, ...) is
+# pushed. Signs in through the publisher's Trusted Publishing policy for this
+# workflow, so no token is stored.
+name: Publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Tag matches the version in package.json
+        if: github.ref_type == 'tag'
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # the Accept Block buttons use a proposed API; without the runtime
+      # argument VS Code ignores it and Second Look shows links instead
+      - run: npx vsce publish --oidc --no-dependencies --allow-proposed-apis contribDiffEditorGutterToolBarMenus

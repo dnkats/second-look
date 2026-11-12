@@ -258,9 +258,19 @@ npm install
 npm test               # engine and comment tests on scratch repositories
 npm run test:vscode    # the extension in a real VS Code, headless via Xvfb
 npm run package        # builds second-look-<version>.vsix
-npm run marketplace    # publishes to the Marketplace (vsce login first)
 node test/vscode/demo.mjs shots   # screenshots of the UI
 ```
+
+A release goes to the Marketplace when its tag is pushed. Bump `version` in
+`package.json`, commit and push, then tag that commit:
+
+```
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+`.github/workflows/publish.yml` checks that the tag matches the version, runs
+the tests and publishes through the publisher's Trusted Publishing policy,
+without a token.
 
 Both VS Code runs use `/usr/share/code/code` unless `VSCODE_PATH` names
 another VS Code; the screenshot script also reads `GRV_SCREEN` (screen size)
