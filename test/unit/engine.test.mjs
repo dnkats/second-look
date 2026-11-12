@@ -509,6 +509,8 @@ test('state and refs of deleted branches are swept; the branch checked out, even
 
   const fresh = mkdtempSync(path.join(tmpdir(), 'grv-'));
   git(fresh, 'init', '-q', '-b', 'main');
+  git(fresh, 'config', 'user.name', 'Test User');
+  git(fresh, 'config', 'user.email', 'test@example.com');
   const unborn = await openReview(fresh);
   await unborn.ensure();
   assert.deepEqual(await engine.sweepGoneBranches(unborn.repo, 'main'), []);
